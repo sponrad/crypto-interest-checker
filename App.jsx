@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, StyleSheet, Text, View } from 'react-native';
+import { AppState } from 'react-native';
 import { registerRootComponent } from 'expo';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AppLoading from 'expo-app-loading';
 
-IS_DEBUG = false;
+import Home from './src/Home.jsx';
+
+IS_DEBUG = true;
 
 
 function App() {
-    const [appIsReady, setAppIsReady] = useState(false);
+    const [appIsReady, setAppIsReady] = useState(IS_DEBUG);
     const appState = useRef(AppState.currentState);
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
@@ -47,22 +49,7 @@ function App() {
         return <AppLoading />;
     }
 
-    return <View style={styles.container}>
-      <Text style={styles.text}>Cranking it out yo</Text>
-      <Text style={styles.text}>Current state: {appStateVisible}</Text>
-    </View>;
+    return <Home />;
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000000',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    text: {
-        color: '#ddd',
-    },
-});
 
 registerRootComponent(App);
