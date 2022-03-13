@@ -1,26 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Image,
-         RefreshControl, SafeAreaView, ScrollView } from 'react-native';
+import { Text, View, Image,
+         RefreshControl, SafeAreaView, ScrollView,
+         TouchableOpacity } from 'react-native';
 // https://min-api.cryptocompare.com/data/all/coinlist?summary=true
-// dont open the file it crashes emacs
+// dont open the file it crashes emacs, the above link is browser safe
 import {coinData as externalCoinData} from './CoinData.jsx';
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000000',
-        padding: 5,
-    },
-    text: {
-        color: '#ddd',
-        textAlign: 'center',
-        fontSize: 16,
-    },
-    logo: {
-        width: 40,
-        height: 40,
-    },
-});
+import { styles } from './styles.js';
 
 const coinData = [
     {'name': 'Bitcoin',
@@ -60,13 +45,12 @@ const wait = (timeout) => {
     return new Promise(resolve => setTimeout(resolve, timeout));
 }
 
-export default function Home() {
+export default function Home({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const [holdings, setHoldings] = useState([]);
 
     function refresh() {
         setRefreshing(true);
-        console.log('calling refresh');
         const tSymbols = coinData.map(cd => cd.tsym).join(',');
         const url = `https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${tSymbols}`;
         fetch(url)
@@ -78,7 +62,6 @@ export default function Home() {
                         cd.balance = cd.price * cd.amt;
                         const tsym = cd.tsym === 'USD' ? 'BTC' : cd.tsym;
                         cd.externalData = externalCoinData.Data[tsym];
-                        console.log(cd);
                         return cd;
                     })
                 );
@@ -100,7 +83,8 @@ export default function Home() {
         </Text>
       </View>
 
-      <ScrollView refreshControl={
+      <ScrollView style={{margin: 10}}
+                  refreshControl={
           <RefreshControl refreshing={refreshing}
                           colors={['#ddd']}
                           tintColor="#ddd"
@@ -150,5 +134,30 @@ export default function Home() {
             </View>
         })}
       </ScrollView>
+      <TouchableOpacity
+          style={{
+              borderWidth: 1,
+              borderColor: 'rgba(0,0,0,0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 60,
+              position: 'absolute',
+              bottom: 30,
+              right: 20,
+              height: 60,
+              backgroundColor: '#999',
+              borderRadius: 30,
+              flex: 1,
+              flexDirection: 'row',
+          }}
+          onPress={() => {
+              navigation.navigate('Add');
+          }}>
+        <Text style={{
+            fontSize: 45,
+            textAlign: 'center',
+            paddingBottom: 7,
+        }}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>;
 }

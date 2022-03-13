@@ -3,11 +3,26 @@ import { AppState, View, Text } from 'react-native';
 import { registerRootComponent } from 'expo';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AppLoading from 'expo-app-loading';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Home from './src/Home.jsx';
+import AddScreen from './src/AddScreen.jsx';
 
 IS_DEBUG = true;
 
+const Stack = createNativeStackNavigator();
+
+// https://reactnavigation.org/docs/themes/
+const NavTheme = {
+    ...DefaultTheme,
+    dark: true,
+    colors: {
+        ...DefaultTheme.colors,
+        background: 'black',
+        text: '#ddd',
+    },
+};
 
 function App() {
     const [appIsReady, setAppIsReady] = useState(IS_DEBUG);
@@ -48,7 +63,20 @@ function App() {
     }
 
     if (appState.current === 'active') {
-        return <Home />;
+        return <NavigationContainer theme={NavTheme}>
+          <Stack.Navigator screenOptions={{
+              headerShown: false,
+              headerStyle: { backgroundColor: 'black' },
+          }}>
+            <Stack.Screen name="Home" component={Home} />
+            <Stack.Screen name="Add"
+                          component={AddScreen}
+                          options={{
+                              headerShown: true,
+                              title: 'Add Asset',
+                          }} />
+          </Stack.Navigator>
+        </NavigationContainer>;
     } else {
         return <View style={{
             backgroundColor: '#000',
