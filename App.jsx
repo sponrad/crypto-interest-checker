@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View, Text } from 'react-native';
 import { registerRootComponent } from 'expo';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AppLoading from 'expo-app-loading';
@@ -20,8 +20,6 @@ function App() {
                 promptMessage: 'test message',
             }).then(res => {
                 setAppIsReady(res.success);
-                console.log(res.success);
-                console.log('hi');
             });
         }
     }, []);
@@ -45,11 +43,24 @@ function App() {
         console.log('AppState', appState.current);
     };
 
-    if (!appIsReady || appState.current !== 'active') {
+    if (!appIsReady) {
         return <AppLoading />;
     }
 
-    return <Home />;
+    if (appState.current === 'active') {
+        return <Home />;
+    } else {
+        return <View style={{
+            backgroundColor: '#000',
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}>
+          <Text style={{color: '#fff'}}>
+            👁 Privacy 👁
+          </Text>
+        </View>;
+    }
 }
 
 registerRootComponent(App);
