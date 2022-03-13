@@ -135,10 +135,17 @@ export default function Home() {
                 </View>
               </View>
 
-              <View style={{flex: 1, alignItems: 'flex-end', alignContent: 'space-around'}}>
-                <Text style={{...styles.text, fontWeight: 'bold', color: 'green'}}>
-                  {formatCurrency(holding.balance)}
-                </Text>
+              <View style={{flex: 1, alignItems: 'flex-end', flexDirect: 'column'}}>
+                <View style={{}}>
+                  <Text style={{...styles.text, fontWeight: 'bold', color: 'green'}}>
+                    {formatCurrency(holding.balance)}
+                  </Text>
+                </View>
+                <View style={{}}>
+                  <Text style={{...styles.text, color: '#888'}}>
+                    {formatCurrency(holding.balance / 12)} / mo
+                  </Text>
+                </View>
               </View>
             </View>
         })}
