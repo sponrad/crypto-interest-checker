@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, Image,
+import { Text, View, Image, ActivityIndicator,
          RefreshControl, SafeAreaView, ScrollView,
          TouchableOpacity } from 'react-native';
 import { coinDataBackend, Asset } from './coinDataBackend.js';
@@ -16,6 +16,7 @@ const assets = [
 ];
 
 export default function Home({ navigation }) {
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [holdings, setHoldings] = useState([]);
 
@@ -28,10 +29,17 @@ export default function Home({ navigation }) {
                     return asset;
                 })
             )
-        }).finally(() => setRefreshing(false));
+        }).finally(() => {
+            setRefreshing(false);
+            setLoading(false);
+        });
     }
     useEffect(refresh, []);
-
+    if (loading) {
+        return <SafeAreaView style={styles.container}>
+          <ActivityIndicator color='#ccc' size='large' />
+        </SafeAreaView>;
+    }
     const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance(), 0);
     return <SafeAreaView style={styles.container}>
 
