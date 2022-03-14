@@ -1,33 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, Image, Button,
          SafeAreaView, ScrollView,
          TouchableHighlight, TextInput} from 'react-native';
-// https://min-api.cryptocompare.com/data/all/coinlist?summary=true
-// dont open the file it crashes emacs, the above link is browser safe
-import {coinData as externalCoinData} from './CoinData.jsx';
+import { coinDataBackend } from  './coinDataBackend.js';
 import { styles } from './styles.js';
 
 export default function AddScreen({ navigation }) {
     const [text, onChangeText] = useState('');
     const [selected, onSetSelected] = useState(null);
     const [amount, onChangeAmount] = useState(null);
-    const availableAssets = useMemo(
-        () => {
-            return Object.values(externalCoinData.Data)
-                         .map(asset => {
-                             return {
-                                 symbol: asset.Symbol,
-                                 name: asset.FullName,
-                             };
-                         });
-        }
-        ,[]
-    )
+    const [availableAssets, setAvailableAssets] = useState([]);
+    useEffect(() => {
+        coinDataBackend.getTopAssets().then(setAvailableAssets);
+    }, []);
     const filteredAssets = useMemo(
         () => availableAssets.filter(asset =>
             asset.name.toLowerCase().includes(text.toLowerCase())
         )
-        ,[text]
+        ,[text, availableAssets]
     );
     return <SafeAreaView style={styles.container}>
       <TextInput onChangeText={onChangeText}

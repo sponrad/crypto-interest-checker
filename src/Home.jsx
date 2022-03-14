@@ -2,32 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, Image,
          RefreshControl, SafeAreaView, ScrollView,
          TouchableOpacity } from 'react-native';
-// https://min-api.cryptocompare.com/data/all/coinlist?summary=true
-// dont open the file it crashes emacs, the above link is browser safe
-import {coinData as externalCoinData} from './CoinData.jsx';
+import { coinDataBackend, Asset } from './coinDataBackend.js';
 import { styles } from './styles.js';
 
-const coinData = [
-    {'name': 'Bitcoin',
-     'pricef': (r) => r['USD'],
-     'tsym': 'USD',
-     'amt': '100'},
-    {'name': 'Ether',
-     'pricef': r => r['USD'] / r['ETH'],
-     'tsym': 'ETH',
-     'amt': '100'},
-    {'name': 'Bitcoin Cash',
-     'pricef': r => r['USD'] / r['BCH'],
-     'tsym': 'BCH',
-     'amt': '100'},
-    {'name': 'Nano',
-     'pricef': r => r['USD'] / r['NANO'],
-     'tsym': 'NANO',
-     'amt': '100'},
-    {'name': 'Lumen',
-     'pricef': r => r['USD'] / r['XLM'],
-     'tsym': 'XLM',
-     'amt': '100'},
+const assets = [
+    new Asset('Bitcoin', 'BTC', null, 100),
+    new Asset('Ethereum', 'ETH', null, 100),
+    new Asset('Bitcoin Cash', 'BCH', null, 100),
+    new Asset('Nano', 'NANO', null, 100),
+    new Asset('Lumen', 'XLM', null, 100),
 ];
 
 function formatCurrency(amount) {
@@ -41,37 +24,24 @@ function formatCurrency(amount) {
     ).format(amount)
 }
 
-const wait = (timeout) => {
-    return new Promise(resolve => setTimeout(resolve, timeout));
-}
-
 export default function Home({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const [holdings, setHoldings] = useState([]);
 
     function refresh() {
         setRefreshing(true);
-        const tSymbols = coinData.map(cd => cd.tsym).join(',');
-        const url = `https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${tSymbols}`;
-        fetch(url)
-            .then(res => res.json())
-            .then(json => {
-                setHoldings(
-                    coinData.map(cd => {
-                        cd.price = cd.pricef(json);
-                        cd.balance = cd.price * cd.amt;
-                        const tsym = cd.tsym === 'USD' ? 'BTC' : cd.tsym;
-                        cd.externalData = externalCoinData.Data[tsym];
-                        return cd;
-                    })
-                );
-            })
-            .finally(() => setRefreshing(false));
+        coinDataBackend.getAssetsPrices(assets).then(prices => {
+            setHoldings(
+                assets.map(asset => {
+                    asset.price = prices[asset.symbol];
+                    return asset;
+                })
+            )
+        }).finally(() => setRefreshing(false));
     }
     useEffect(refresh, []);
 
-    const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance, 0);
-    const baseImageUrl = 'https://www.cryptocompare.com/';
+    const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance(), 0);
     return <SafeAreaView style={styles.container}>
 
       <View style={{marginTop: 30, marginBottom: 30}}>
@@ -91,7 +61,7 @@ export default function Home({ navigation }) {
                           onRefresh={refresh} />
       }>
         {holdings.map(holding => {
-            return <View key={holding.name} style={{
+            return <View key={holding.symbol} style={{
                 flexDirection: 'row',
                 alignContent: 'center',
             }}>
@@ -102,19 +72,19 @@ export default function Home({ navigation }) {
                     marginLeft: 5,
                 }}
                        source={{
-                           uri: `${baseImageUrl}${holding.externalData.ImageUrl}`,
+                           uri: holding.imageUrl,
                        }} />
               </View>
 
               <View style={{flex: 1, alignItems: 'flex-start', flexDirect: 'column'}}>
                 <View style={{}}>
                   <Text style={styles.text}>
-                    {holding.externalData.FullName}
+                    {holding.name}
                   </Text>
                 </View>
                 <View style={{}}>
                   <Text style={{...styles.text, color: '#888'}}>
-                    {holding.amt} | {formatCurrency(holding.price)}
+                    {holding.quantity} | {formatCurrency(holding.price)}
                   </Text>
                 </View>
               </View>
@@ -122,12 +92,12 @@ export default function Home({ navigation }) {
               <View style={{flex: 1, alignItems: 'flex-end', flexDirect: 'column'}}>
                 <View style={{}}>
                   <Text style={{...styles.text, fontWeight: 'bold', color: 'green'}}>
-                    {formatCurrency(holding.balance)}
+                    {formatCurrency(holding.balance())}
                   </Text>
                 </View>
                 <View style={{}}>
                   <Text style={{...styles.text, color: '#888'}}>
-                    {formatCurrency(holding.balance / 12)} / mo
+                    {formatCurrency(holding.balance() / 12)} / mo
                   </Text>
                 </View>
               </View>
