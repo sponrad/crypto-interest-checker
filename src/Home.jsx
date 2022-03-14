@@ -4,6 +4,7 @@ import { Text, View, Image,
          TouchableOpacity } from 'react-native';
 import { coinDataBackend, Asset } from './coinDataBackend.js';
 import { styles } from './styles.js';
+import { formatCurrency } from './util.js';
 
 const assets = [
     new Asset('Bitcoin', 'BTC', null, 100),
@@ -12,17 +13,6 @@ const assets = [
     new Asset('Nano', 'NANO', null, 100),
     new Asset('Lumen', 'XLM', null, 100),
 ];
-
-function formatCurrency(amount) {
-    return new Intl.NumberFormat(
-        'en-US',
-        {
-            style: 'currency',
-            currency: 'USD',
-            currencySign: 'accounting'
-        }
-    ).format(amount)
-}
 
 export default function Home({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
