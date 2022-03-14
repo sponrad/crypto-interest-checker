@@ -5,6 +5,7 @@ import { Text, View, Image,
 import { coinDataBackend, Asset } from './coinDataBackend.js';
 import { styles } from './styles.js';
 import { formatCurrency } from './util.js';
+import AssetImage from './AssetImage.jsx';
 
 const assets = [
     new Asset('Bitcoin', 'BTC', null, 100),
@@ -55,15 +56,8 @@ export default function Home({ navigation }) {
                 flexDirection: 'row',
                 alignContent: 'center',
             }}>
-              <View style={{marginBottom: 10}}>
-                <Image style={{
-                    ...styles.logo,
-                    marginRight: 10,
-                    marginLeft: 5,
-                }}
-                       source={{
-                           uri: holding.imageUrl,
-                       }} />
+              <View style={{marginBottom: 10, marginRight: 10, marginLeft: 5}}>
+                <AssetImage asset={holding} />
               </View>
 
               <View style={{flex: 1, alignItems: 'flex-start', flexDirect: 'column'}}>

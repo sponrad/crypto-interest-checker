@@ -11,10 +11,6 @@ export const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 16,
     },
-    logo: {
-        width: 40,
-        height: 40,
-    },
     input: {
         height: 40,
         margin: 12,
