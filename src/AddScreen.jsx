@@ -3,8 +3,10 @@ import { Text, View, Image, Button, ActivityIndicator,
          SafeAreaView, ScrollView,
          TouchableHighlight, TextInput} from 'react-native';
 import { coinDataBackend } from  './coinDataBackend.js';
+import { Asset } from  './models.js';
 import { styles } from './styles.js';
 import AssetImage from './AssetImage.jsx';
+import { getAssets, saveAssets } from './localStorage.js';
 
 export default function AddScreen({ navigation }) {
     const [text, onChangeText] = useState('');
@@ -32,11 +34,10 @@ export default function AddScreen({ navigation }) {
                     style={styles.input}
                     placeholder='Filter name or symbol...'
                     placeholderTextColor='#999'
-                    autoFocus
                     value={text} />
          {!!filteredAssets &&
           <ScrollView style={{margin: 10}}>
-            {loading && <ActivityIndicator />}
+            {loading && <ActivityIndicator color="#ccc" />}
             {filteredAssets.map(asset => {
                 return <TouchableHighlight key={asset.symbol}
                                            onPress={() => setSelected(asset)}>
@@ -93,7 +94,18 @@ export default function AddScreen({ navigation }) {
          />
          <Button title="Save"
                  disabled={!selected || !amount}
-                 onPress={() => console.log('saved')}
+                 onPress={() => {
+                     // this is dumb right now
+                     const assets = [
+                         new Asset('Bitcoin', 'BTC', null, 100),
+                         new Asset('Ethereum', 'ETH', null, 100),
+                         new Asset('Bitcoin Cash', 'BCH', null, 100),
+                         new Asset('Nano', 'NANO', null, 100),
+                         new Asset('Stellar', 'XLM', null, 100),
+                     ];
+                     saveAssets(assets);
+                     navigation.navigate('Home');
+           }}
          />
        </View>
       }

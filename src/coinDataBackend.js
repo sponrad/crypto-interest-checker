@@ -1,35 +1,4 @@
-// Assets are going to be serialized and stored locally
-export class Asset {
-    constructor(name, symbol, imageUrl=null, quantity=0) {
-        this.name = name;
-        this.symbol = symbol;
-        this.imageUrl = imageUrl;
-        this.quantity = quantity;
-        // tbd interest accounts
-        this.interestAccounts = [];
-        this.price = 0;
-
-        // make sure we have an imageUrl.. since its passed optionally
-        this.getImageUrl();
-    }
-
-    getPrice() {
-        return coinDataBackend.getSymbolPrice(this.symbol);
-    }
-
-    balance() {
-        return this.quantity * this.price;
-    }
-
-    getImageUrl() {
-        if (!this.imageUrl) {
-            coinDataBackend.getImageUrl(this.symbol).then(
-                url => this.imageUrl = url
-            );
-        }
-        return this.imageUrl;
-    }
-}
+import { Asset } from './models.js';
 
 const cryptoCompareBackend = {
     // https://min-api.cryptocompare.com/documentation

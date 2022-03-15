@@ -9,7 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from './src/Home.jsx';
 import AddScreen from './src/AddScreen.jsx';
 
-IS_DEBUG = true;
+const IS_DEBUG = true;
 
 const Stack = createNativeStackNavigator();
 

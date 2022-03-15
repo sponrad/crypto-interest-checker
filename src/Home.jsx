@@ -1,27 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, Image, ActivityIndicator,
-         RefreshControl, SafeAreaView, ScrollView,
+         RefreshControl, SafeAreaView, ScrollView, Button,
          TouchableOpacity } from 'react-native';
-import { coinDataBackend, Asset } from './coinDataBackend.js';
+import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';
 import { formatCurrency } from './util.js';
+import { getAssets, saveAssets } from './localStorage.js';
 import AssetImage from './AssetImage.jsx';
-
-const assets = [
-    new Asset('Bitcoin', 'BTC', null, 100),
-    new Asset('Ethereum', 'ETH', null, 100),
-    new Asset('Bitcoin Cash', 'BCH', null, 100),
-    new Asset('Nano', 'NANO', null, 100),
-    new Asset('Lumen', 'XLM', null, 100),
-];
 
 export default function Home({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [holdings, setHoldings] = useState([]);
 
-    function refresh() {
+    async function refresh() {
         setRefreshing(true);
+        const assets = await getAssets();
+        if (assets.length === 0) {
+            setRefreshing(false);
+            setLoading(false);
+            setHoldings([]);
+            return;
+        }
         coinDataBackend.getAssetsPrices(assets).then(prices => {
             setHoldings(
                 assets.map(asset => {
@@ -35,6 +35,12 @@ export default function Home({ navigation }) {
         });
     }
     useEffect(refresh, []);
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            refresh();
+        });
+        return unsubscribe;
+    }, [navigation]);
     if (loading) {
         return <SafeAreaView style={styles.container}>
           <ActivityIndicator color='#ccc' size='large' />
@@ -43,15 +49,33 @@ export default function Home({ navigation }) {
     const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance(), 0);
     return <SafeAreaView style={styles.container}>
 
+    {holdings.length > 0 &&
       <View style={{marginTop: 30, marginBottom: 30}}>
-        <Text style={{...styles.text, fontSize: 40, fontWeight: 'bold'}}>
-          {formatCurrency(totalBalance)}
-        </Text>
-        <Text style={{...styles.text, fontSize: 25, fontWeight: 'bold'}}>
-          {formatCurrency(totalBalance / 12)} / mo
-        </Text>
+         <Text style={{...styles.text, fontSize: 40, fontWeight: 'bold'}}>
+           {formatCurrency(totalBalance)}
+         </Text>
+         <Text style={{...styles.text, fontSize: 25, fontWeight: 'bold'}}>
+           {formatCurrency(totalBalance / 12)} / mo
+         </Text>
       </View>
-
+    ||
+     <View style={{
+         margin: 30,
+         flex: 1,
+         alignContent: 'center',
+         justifyContent: 'center',
+     }}>
+       {!refreshing &&
+        <Text style={{
+            ...styles.text,
+            fontSize: 25,
+            fontWeight: 'bold',
+        }}>
+          Click below to add some assets.
+        </Text>
+       }
+     </View>
+    }
       <ScrollView style={{margin: 10}}
                   refreshControl={
           <RefreshControl refreshing={refreshing}
@@ -95,6 +119,12 @@ export default function Home({ navigation }) {
               </View>
             </View>
         })}
+        <Button title="clear assets"
+                onPress={() => {
+                    saveAssets([]);
+                    setHoldings([]);
+                    refresh();
+                }} />
       </ScrollView>
       <TouchableOpacity
           style={{
