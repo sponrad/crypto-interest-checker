@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { Asset } from './models.js';
+import { Asset, InterestAccount } from './models.js';
 
 async function save(key, value) {
     await SecureStore.setItemAsync(key, value);
@@ -27,7 +27,13 @@ export async function getAssets() {
                        json.symbol,
                        json.imageUrl,
                        json.quantity,
-                       json.interestAccounts,
+                       json.interestAccounts.map(
+                           ia => new InterestAccount(
+                               ia.name,
+                               ia.interestTiers,
+                               ia.quantiy,
+                           )
+                       ),
                    );
                });
 }
@@ -40,7 +46,15 @@ export function saveAssets(assets) {
                  symbol: asset.symbol,
                  imageUrl: asset.imageUrl,
                  quantity: asset.quantity,
-                 interestAccounts: asset.interestAccounts,
+                 interestAccounts: asset.interestAccounts.map(
+                     ia => {
+                         return {
+                             name: ia.name,
+                             interestTiers: ia.interestTiers,
+                             quantity: ia.quantiy,
+                         };
+                     }
+                 ),
              };
          }))
     );
