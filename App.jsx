@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Home from './src/Home.jsx';
 import AddScreen from './src/AddScreen.jsx';
+import AssetScreen from './src/AssetScreen.jsx';
 
 const IS_DEBUG = true;
 
@@ -74,6 +75,12 @@ function App() {
                           options={{
                               headerShown: true,
                               title: 'Add Asset',
+                          }} />
+            <Stack.Screen name="Asset"
+                          component={AssetScreen}
+                          options={{
+                              headerShown: true,
+                              title: 'Configure Asset',
                           }} />
           </Stack.Navigator>
         </NavigationContainer>;

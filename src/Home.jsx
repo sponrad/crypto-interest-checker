@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, Image, ActivityIndicator,
          RefreshControl, SafeAreaView, ScrollView, Button,
          TouchableOpacity } from 'react-native';
+
 import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';
 import { formatCurrency } from './util.js';
 import { getAssets, saveAssets } from './localStorage.js';
-import AssetImage from './AssetImage.jsx';
+import AssetRow from './AssetRow.jsx';
 
 export default function Home({ navigation }) {
     const [loading, setLoading] = useState(true);
@@ -22,6 +23,7 @@ export default function Home({ navigation }) {
             setHoldings([]);
             return;
         }
+        // TODO update any changed quantities before we wait for price refreshment
         coinDataBackend.getAssetsPrices(assets).then(prices => {
             setHoldings(
                 assets.map(asset => {
@@ -76,55 +78,24 @@ export default function Home({ navigation }) {
        }
      </View>
     }
-      <ScrollView style={{margin: 10}}
-                  refreshControl={
+      <ScrollView refreshControl={
           <RefreshControl refreshing={refreshing}
                           colors={['#ddd']}
                           tintColor="#ddd"
                           onRefresh={refresh} />
       }>
         {holdings.map(holding => {
-            return <View key={holding.symbol} style={{
-                flexDirection: 'row',
-                alignContent: 'center',
-            }}>
-              <View style={{marginBottom: 10, marginRight: 10, marginLeft: 5}}>
-                <AssetImage asset={holding} />
-              </View>
+            return <TouchableOpacity key={holding.symbol}
+                                     onPress={() => {
+                                         navigation.navigate('Asset', {
+                                             symbol: holding.symbol,
+                                             price: holding.price,
+                                         });
+                                     }}>
 
-              <View style={{flex: 1, alignItems: 'flex-start', flexDirect: 'column'}}>
-                <View style={{}}>
-                  <Text style={styles.text}>
-                    {holding.name}
-                  </Text>
-                </View>
-                <View style={{}}>
-                  <Text style={{...styles.text, color: '#888'}}>
-                    {holding.quantity} | {formatCurrency(holding.price)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={{flex: 1, alignItems: 'flex-end', flexDirect: 'column'}}>
-                <View style={{}}>
-                  <Text style={{...styles.text, fontWeight: 'bold', color: 'green'}}>
-                    {formatCurrency(holding.balance())}
-                  </Text>
-                </View>
-                <View style={{}}>
-                  <Text style={{...styles.text, color: '#888'}}>
-                    {formatCurrency(holding.balance() / 12)} / mo
-                  </Text>
-                </View>
-              </View>
-            </View>
+              <AssetRow asset={holding} />
+            </TouchableOpacity>;
         })}
-        <Button title="clear assets"
-                onPress={() => {
-                    saveAssets([]);
-                    setHoldings([]);
-                    refresh();
-                }} />
       </ScrollView>
       <TouchableOpacity
           style={{

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, Button, ActivityIndicator,
          SafeAreaView, FlatList,
          TouchableHighlight, TextInput} from 'react-native';
+
 import { coinDataBackend } from  './coinDataBackend.js';
 import { styles } from './styles.js';
 import AssetImage from './AssetImage.jsx';
@@ -100,9 +101,9 @@ export default function AddScreen({ navigation }) {
                      const currentSymbols = assets.map(asset => asset.symbol);
                      if (currentSymbols.includes(selectedAsset.symbol)) {
                          const index = assets.findIndex(
-                             asset => asset.symsbol === selectedAsset.symbol
+                             asset => asset.symbol === selectedAsset.symbol
                          );
-                         assets[0].quantity += Number(quantity);
+                         assets[index].quantity += Number(quantity);
                          saveAssets(assets);
                      } else {
                          selectedAsset.quantity = Number(quantity);
