@@ -11,7 +11,7 @@ export class Asset {
         this.name = name;
         this.symbol = symbol;
         this.imageUrl = imageUrl;
-        this.quantity = quantity;
+        this.quantity = Number(quantity);
         // tbd interest accounts
         this.interestAccounts = interestAccounts;
         this.price = 0;
@@ -51,7 +51,7 @@ export class InterestAccount {
         // [{tier: X, rate: X}, {tier: X, rate: X},]
         // this needs to be an array to maintain order
         this.interestTiers = interestTiers;
-        this.quantity = quantity;
+        this.quantity = Number(quantity);
     }
 
     yearly(price) {

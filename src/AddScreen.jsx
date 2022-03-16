@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Text, View, Image, Button, ActivityIndicator,
+import { Text, View, Button, ActivityIndicator,
          SafeAreaView, ScrollView,
          TouchableHighlight, TextInput} from 'react-native';
 import { coinDataBackend } from  './coinDataBackend.js';
-import { Asset } from  './models.js';
 import { styles } from './styles.js';
 import AssetImage from './AssetImage.jsx';
 import { getAssets, saveAssets } from './localStorage.js';
 
 export default function AddScreen({ navigation }) {
     const [text, onChangeText] = useState('');
-    const [selected, setSelected] = useState(null);
-    const [amount, onChangeAmount] = useState(null);
+    const [selectedAsset, setSelectedAsset] = useState(null);
+    const [quantity, onChangeQuantity] = useState(null);
     const [availableAssets, setAvailableAssets] = useState([]);
     const [loading, setLoading] = useState(false);
     useEffect(() => {
@@ -28,7 +27,7 @@ export default function AddScreen({ navigation }) {
         ,[text, availableAssets]
     );
     return <SafeAreaView style={styles.container}>
-      {!selected &&
+      {!selectedAsset &&
        <View>
          <TextInput onChangeText={onChangeText}
                     style={styles.input}
@@ -40,7 +39,7 @@ export default function AddScreen({ navigation }) {
             {loading && <ActivityIndicator color="#ccc" />}
             {filteredAssets.map(asset => {
                 return <TouchableHighlight key={asset.symbol}
-                                           onPress={() => setSelected(asset)}>
+                                           onPress={() => setSelectedAsset(asset)}>
                   <View style={{
                       flexDirection: 'row',
                       alignContent: 'center',
@@ -62,7 +61,7 @@ export default function AddScreen({ navigation }) {
          }
        </View>
       }
-      {selected &&
+      {selectedAsset &&
        <View>
          <View style={{
              flexDirection: 'row',
@@ -72,38 +71,41 @@ export default function AddScreen({ navigation }) {
              marginTop: 20,
          }}>
            <View style={{marginRight: 10}}>
-             <AssetImage asset={selected} />
+             <AssetImage asset={selectedAsset} />
            </View>
-           <Text key={selected.symbol}
+           <Text key={selectedAsset.symbol}
                  style={styles.text}>
-             {selected.name} ({selected.symbol})
+             {selectedAsset.name} ({selectedAsset.symbol})
            </Text>
            <View style={{flex: 1, alignItems: 'flex-end'}}>
              <Button title="un-select"
-                     onPress={() => setSelected(null)} />
+                     onPress={() => setSelectedAsset(null)} />
            </View>
          </View>
          <TextInput
              style={styles.input}
-             onChangeText={onChangeAmount}
-             value={amount}
-             placeholder="Set the amount"
+             onChangeText={onChangeQuantity}
+             value={quantity}
+             placeholder="Set the quantity"
              placeholderTextColor='#999'
              keyboardType="numeric"
              autoFocus
          />
          <Button title="Save"
-                 disabled={!selected || !amount}
-                 onPress={() => {
-                     // this is dumb right now
-                     const assets = [
-                         new Asset('Bitcoin', 'BTC', null, 100),
-                         new Asset('Ethereum', 'ETH', null, 100),
-                         new Asset('Bitcoin Cash', 'BCH', null, 100),
-                         new Asset('Nano', 'NANO', null, 100),
-                         new Asset('Stellar', 'XLM', null, 100),
-                     ];
-                     saveAssets(assets);
+                 disabled={!selectedAsset || !quantity}
+                 onPress={async () => {
+                     const assets = await getAssets();
+                     const currentSymbols = assets.map(asset => asset.symbol);
+                     if (currentSymbols.includes(selectedAsset.symbol)) {
+                         const index = assets.findIndex(
+                             asset => asset.symsbol === selectedAsset.symbol
+                         );
+                         assets[0].quantity += Number(quantity);
+                         saveAssets(assets);
+                     } else {
+                         selectedAsset.quantity = Number(quantity);
+                         saveAssets(assets.concat([selectedAsset]));
+                     }
                      navigation.navigate('Home');
            }}
          />
