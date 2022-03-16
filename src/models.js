@@ -1,5 +1,3 @@
-import { coinDataBackend } from './coinDataBackend.js';
-
 export class Asset {
     constructor(
         name,
@@ -15,22 +13,19 @@ export class Asset {
         // tbd interest accounts
         this.interestAccounts = interestAccounts;
         this.price = 0;
-
-        // make sure we have an imageUrl.. since its passed optionally
-        this.getImageUrl();
     }
 
-    getPrice() {
-        return coinDataBackend.getSymbolPrice(this.symbol);
+    getPrice(backend) {
+        return backend.getSymbolPrice(this.symbol);
     }
 
     balance() {
         return this.quantity * this.price;
     }
 
-    getImageUrl() {
+    getImageUrl(backend) {
         if (!this.imageUrl) {
-            coinDataBackend.getImageUrl(this.symbol).then(
+            backend.getImageUrl(this.symbol).then(
                 url => this.imageUrl = url
             );
         }

@@ -2,14 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Image } from 'react-native';
 
+import { coinDataBackend } from './coinDataBackend.js';
+
 export default function AssetImage(props) {
     const style = {
         width: 40,
         height: 40,
     };
-    // check if we have the image in the local cache
     return <Image style={style}
-                  source={{uri: props.asset.imageUrl}} />
+                  source={{
+                      uri: props.asset.getImageUrl(coinDataBackend),
+                  }} />
 }
 
 AssetImage.propTypes = {
