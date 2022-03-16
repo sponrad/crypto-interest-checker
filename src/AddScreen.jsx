@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Text, View, Button, ActivityIndicator,
-         SafeAreaView, ScrollView,
+         SafeAreaView, FlatList,
          TouchableHighlight, TextInput} from 'react-native';
 import { coinDataBackend } from  './coinDataBackend.js';
 import { styles } from './styles.js';
@@ -26,6 +26,26 @@ export default function AddScreen({ navigation }) {
         )
         ,[text, availableAssets]
     );
+    const renderItem = ({ item }) => {
+        const asset = item;
+        return <TouchableHighlight key={asset.symbol}
+                                   onPress={() => setSelectedAsset(asset)}>
+          <View style={{
+              flexDirection: 'row',
+              alignContent: 'center',
+              alignItems: 'center',
+              marginBottom: 10,
+          }}>
+            <View style={{marginRight: 10}}>
+              <AssetImage asset={asset} />
+            </View>
+            <Text key={asset.symbol}
+                  style={styles.text}>
+              {asset.name} ({asset.symbol})
+            </Text>
+          </View>
+        </TouchableHighlight>;
+    };
     return <SafeAreaView style={styles.container}>
       {!selectedAsset &&
        <View>
@@ -34,30 +54,12 @@ export default function AddScreen({ navigation }) {
                     placeholder='Filter name or symbol...'
                     placeholderTextColor='#999'
                     value={text} />
+         {loading && <ActivityIndicator color="#ccc" />}
          {!!filteredAssets &&
-          <ScrollView style={{margin: 10}}>
-            {loading && <ActivityIndicator color="#ccc" />}
-            {filteredAssets.map(asset => {
-                return <TouchableHighlight key={asset.symbol}
-                                           onPress={() => setSelectedAsset(asset)}>
-                  <View style={{
-                      flexDirection: 'row',
-                      alignContent: 'center',
-                      alignItems: 'center',
-                      marginBottom: 10,
-                  }}>
-                    <View style={{marginRight: 10}}>
-                      <AssetImage asset={asset} />
-                    </View>
-                    <Text key={asset.symbol}
-                          style={styles.text}>
-                      {asset.name} ({asset.symbol})
-                    </Text>
-                  </View>
-                </TouchableHighlight>
-                ;
-            })}
-          </ScrollView>
+          <FlatList style={{margin: 10}}
+                    data={filteredAssets}
+                    keyExtractor={(item) => item.symbol}
+                    renderItem={renderItem} />
          }
        </View>
       }
