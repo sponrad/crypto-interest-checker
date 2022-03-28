@@ -15,7 +15,6 @@ export default function Home({ navigation }) {
     const [holdings, setHoldings] = useState([]);
 
     async function refresh() {
-        setRefreshing(true);
         const assets = await getAssets();
         if (assets.length === 0) {
             setRefreshing(false);
@@ -35,6 +34,10 @@ export default function Home({ navigation }) {
             setRefreshing(false);
             setLoading(false);
         });
+    }
+    function pullRefresh() {
+        setRefreshing(true);
+        refresh();
     }
     useEffect(refresh, []);
     useEffect(() => {
@@ -82,7 +85,7 @@ export default function Home({ navigation }) {
           <RefreshControl refreshing={refreshing}
                           colors={['#ddd']}
                           tintColor="#ddd"
-                          onRefresh={refresh} />
+                          onRefresh={pullRefresh} />
       }>
         {holdings.map(holding => {
             return <TouchableOpacity key={holding.symbol}
