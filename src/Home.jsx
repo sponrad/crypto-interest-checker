@@ -57,10 +57,10 @@ export default function Home({ navigation }) {
     {holdings.length > 0 &&
       <View style={{marginTop: 30, marginBottom: 30}}>
          <Text style={{...styles.text, fontSize: 40, fontWeight: 'bold'}}>
-           {formatCurrency(totalBalance)}
+           {formatCurrency(totalBalance, false)}
          </Text>
          <Text style={{...styles.text, fontSize: 25, fontWeight: 'bold'}}>
-           {formatCurrency(totalBalance / 12)} / mo
+           {formatCurrency(totalBalance / 12, false)} / mo
          </Text>
       </View>
     ||

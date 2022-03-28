@@ -34,12 +34,12 @@ export default function AssetRow(props) {
       <View style={{flex: 1, alignItems: 'flex-end', flexDirect: 'column'}}>
         <View style={{}}>
           <Text style={{...styles.text, fontWeight: 'bold', color: 'green'}}>
-            {formatCurrency(props.asset.balance())}
+            {formatCurrency(props.asset.balance(), false)}
           </Text>
         </View>
         <View style={{}}>
           <Text style={{...styles.text, color: '#888'}}>
-            {formatCurrency(props.asset.balance() / 12)} / mo
+            {formatCurrency(props.asset.balance() / 12, false)} / mo
           </Text>
         </View>
       </View>
