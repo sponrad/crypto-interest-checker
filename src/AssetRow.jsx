@@ -14,7 +14,7 @@ export default function AssetRow(props) {
         alignContent: 'center',
         marginRight: 10,
     }}>
-      <View style={{marginBottom: 10, marginRight: 10, marginLeft: 5}}>
+      <View style={{marginBottom: 15, marginRight: 10, marginLeft: 5}}>
         <AssetImage asset={props.asset} />
       </View>
 

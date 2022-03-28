@@ -95,7 +95,6 @@ export default function Home({ navigation }) {
                                              price: holding.price,
                                          });
                                      }}>
-
               <AssetRow asset={holding} />
             </TouchableOpacity>;
         })}

@@ -89,7 +89,7 @@ export default function AddScreen({ navigation }) {
              style={styles.input}
              onChangeText={onChangeQuantity}
              value={quantity}
-             placeholder="Set the quantity"
+             placeholder="Quantity"
              placeholderTextColor='#999'
              keyboardType="numeric"
              autoFocus

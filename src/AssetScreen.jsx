@@ -21,6 +21,7 @@ export default function AssetScreen({ route, navigation }) {
         });
         theAsset.price = price;
         setAsset(theAsset);
+        setQuantity(theAsset.quantity.toString());
     }, []);
 
     if (!asset) {
@@ -51,18 +52,14 @@ export default function AssetScreen({ route, navigation }) {
         marginTop: 15,
     }}>
       <AssetRow asset={asset} />
-      <View style={{flexDirection: 'row'}}>
-        <View style={{flex: 1, alignItems: 'left'}}>
-          <Button title={`Edit quantity (${asset.quantity})`}
-                  onPress={() => setEditQuantity(!editQuantity)} />
-        </View>
-        <View style={{flex: 1, alignItems: 'right'}}>
-          <Button title="Add interest account"
-                  onPress={() => console.log("add interest account")} />
-        </View>
-      </View>
+      <Button title={editQuantity ? 'Cancel edit' : 'Edit quantity'}
+              onPress={() => setEditQuantity(!editQuantity)} />
       {editQuantity &&
-         <View style={{flexDirection: 'row', alignItems: 'center'}}>
+       <View style={{
+           flexDirection: 'row',
+           alignItems: 'center',
+           marginTop: 20,
+       }}>
            <View style={{flex: 4}}>
              <TextInput
                  style={styles.input}
@@ -75,7 +72,7 @@ export default function AssetScreen({ route, navigation }) {
              />
            </View>
            <View style={{flex: 3}}>
-             <Button title="Save Quantity"
+             <Button title="Save"
                      disabled={!quantity}
                      onPress={onSaveQuantity}
              />
@@ -83,7 +80,7 @@ export default function AssetScreen({ route, navigation }) {
          </View>
       }
       {editQuantity &&
-       <View style={{flexDirection: 'row'}}>
+       <View style={{flexDirection: 'row', marginTop: 20}}>
          <View style={{flex: 1}}>
            <Button title={`Remove ${asset.name}`}
                    color="red"
@@ -91,6 +88,8 @@ export default function AssetScreen({ route, navigation }) {
          </View>
        </View>
       }
+      <Button title="Add interest account"
+              onPress={() => console.log("add interest account")} />
       <View style={{marginTop: 15}}>
         <Text style={styles.text}>Interest accounts here</Text>
       </View>
