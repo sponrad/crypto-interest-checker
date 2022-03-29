@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, View, Text } from 'react-native';
-import { registerRootComponent } from 'expo';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AppLoading from 'expo-app-loading';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
@@ -25,7 +24,7 @@ const NavTheme = {
     },
 };
 
-function App() {
+export function App() {
     const [appIsReady, setAppIsReady] = useState(IS_DEBUG);
     const appState = useRef(AppState.currentState);
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
@@ -97,5 +96,3 @@ function App() {
         </View>;
     }
 }
-
-registerRootComponent(App);

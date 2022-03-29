@@ -1,7 +1,6 @@
 {
   "name": "expo-starter",
   "version": "1.0.0",
-  "main": "App.jsx",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
