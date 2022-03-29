@@ -12,6 +12,8 @@ export default function AssetScreen({ route, navigation }) {
     const [asset, setAsset] = useState(null);
     const [editQuantity, setEditQuantity] = useState(false);
     const [quantity, setQuantity] = useState(null);
+    const [editInterest, setEditInterest] = useState(false);
+    const [interestRate, setInterestRate] = useState(0);
 
     useEffect(async () => {
         const assets = await getAssets();
@@ -38,6 +40,7 @@ export default function AssetScreen({ route, navigation }) {
         saveAssets(assets);
         setAsset(assets[index]);
         setEditQuantity(false);
+        // also update the interest quantity, though only if we are not on a pro plan
     }
 
     async function onRemove() {
@@ -46,6 +49,26 @@ export default function AssetScreen({ route, navigation }) {
         navigation.pop();
     }
 
+    async function onSaveInterestRate() {
+        const assets = await getAssets();
+        const index = assets.findIndex(
+            asset => asset.symbol === symbol
+        );
+        assets[index].setInterestRate(Number(interestRate));
+        saveAssets(assets);
+        setAsset(prevAsset => {
+            let assetCopy = prevAsset;
+            assetCopy.setInterestRate(Number(interestRate));
+            return assetCopy;
+        });
+        setEditInterest(false);
+    }
+
+    let assetGlobalInterest = 0;
+    if (asset.interestAccounts.length > 0) {
+        // this will get way more complicated
+        assetGlobalInterest = asset.interestAccounts[0].interestTiers[0].rate;
+    }
     return <SafeAreaView style={{
         ...styles.container,
         alignItems: 'flext-start',
@@ -88,11 +111,41 @@ export default function AssetScreen({ route, navigation }) {
          </View>
        </View>
       }
-      <Button title="Add interest account"
-              onPress={() => console.log("add interest account")} />
-      <View style={{marginTop: 15}}>
-        <Text style={styles.text}>Interest accounts here</Text>
-      </View>
+      {assetGlobalInterest > 0 &&
+      <Text style={{marginLeft: 10, marginTop: 20, ...styles.text}}>
+        Interest rate: {assetGlobalInterest}%
+      </Text>
+      }
+      <Button title={editInterest ? 'Cancel edit' : 'Edit interest rate'}
+              onPress={() => {
+                  setInterestRate(assetGlobalInterest);
+                  setEditInterest(!editInterest);
+              }} />
+      {editInterest &&
+       <View style={{
+           flexDirection: 'row',
+           alignItems: 'center',
+           marginTop: 20,
+       }}>
+         <View style={{flex: 4}}>
+           <TextInput
+               style={styles.input}
+               onChangeText={setInterestRate}
+               value={interestRate}
+               placeholder="New interest rate percent (eg 5)"
+               placeholderTextColor='#999'
+               keyboardType="numeric"
+               autoFocus
+           />
+         </View>
+         <View style={{flex: 3}}>
+           <Button title="Save"
+                   disabled={!interestRate}
+                   onPress={onSaveInterestRate}
+           />
+         </View>
+       </View>
+      }
 
     </SafeAreaView>;
 }

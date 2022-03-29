@@ -1,3 +1,17 @@
+function getAllFuncs(toCheck) {
+    const props = [];
+    let obj = toCheck;
+    do {
+        props.push(...Object.getOwnPropertyNames(obj));
+    } while (obj = Object.getPrototypeOf(obj));
+
+    return props.sort().filter((e, i, arr) => {
+        if (e!=arr[i+1] && typeof toCheck[e] == 'function') return true;
+    });
+}
+
+
+
 export class Asset {
     constructor(
         name,
@@ -10,7 +24,6 @@ export class Asset {
         this.symbol = symbol;
         this.imageUrl = imageUrl;
         this.quantity = Number(quantity);
-        // tbd interest accounts
         this.interestAccounts = interestAccounts;
         this.price = 0;
     }
@@ -33,10 +46,26 @@ export class Asset {
     }
 
     yearly() {
-        return this.interestAccounts.reduce(
-            (account, prev) => account.yearly(this.price) + prev
-            ,0
-        );
+        if (this.interestAccounts.length > 0) {
+            return this.interestAccounts.reduce(
+                (prev, account) => {
+                    return account.yearlyEarnings(this.price) + prev;
+                }, 0
+            );
+        } else {
+            return 0;
+        }
+    }
+
+    setInterestRate(rate) {
+        // this is the ghetto global version
+        this.interestAccounts = [
+            new InterestAccount(
+                'Default',
+                [{tier: Infinity, rate: rate}],
+                this.quantity,
+            ),
+        ];
     }
 }
 
@@ -44,12 +73,18 @@ export class InterestAccount {
     constructor(name, interestTiers,  quantity) {
         this.name = name;
         // [{tier: X, rate: X}, {tier: X, rate: X},]
+        // tier can be Infinity, which gets stringified as null
         // this needs to be an array to maintain order
-        this.interestTiers = interestTiers;
+        this.interestTiers = interestTiers.map(intTier => {
+            return {
+                tier: Number(intTier.tier) || Infinity,
+                rate: Number(intTier.rate),
+            };
+        });
         this.quantity = Number(quantity);
     }
 
-    yearly(price) {
+    yearlyEarnings(price) {
         // passing price in since that will come from the Asset
         let earnedAmount = 0.0;
         let unappliedQuantity = this.quantity;
@@ -76,6 +111,6 @@ function testInterestAccountYearly() {
         [{tier: 30, rate: 5.35},{tier: Infinity, rate: 3.52}],
         115.207147,
     );
-    const yearly = celEth.yearly(2707.71);
+    const yearly = celEth.yearlyEarnings(2707.71);
     console.log(`12,467.06 should mostly match the calced yearly: ${yearly}`);
 }

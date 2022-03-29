@@ -52,15 +52,16 @@ export default function Home({ navigation }) {
         </SafeAreaView>;
     }
     const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance(), 0);
-    return <SafeAreaView style={styles.container}>
+    const totalInterest = holdings.reduce((prev, curr) => prev + curr.yearly(), 0);
 
+    return <SafeAreaView style={styles.container}>
     {holdings.length > 0 &&
       <View style={{marginTop: 30, marginBottom: 30}}>
          <Text style={{...styles.text, fontSize: 40, fontWeight: 'bold'}}>
            {formatCurrency(totalBalance, false)}
          </Text>
          <Text style={{...styles.text, fontSize: 25, fontWeight: 'bold'}}>
-           {formatCurrency(totalBalance / 12, false)} / mo
+           {formatCurrency(totalInterest / 12, false)} / mo
          </Text>
       </View>
     ||

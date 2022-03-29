@@ -28,11 +28,13 @@ export async function getAssets() {
                        json.imageUrl,
                        json.quantity,
                        json.interestAccounts.map(
-                           ia => new InterestAccount(
-                               ia.name,
-                               ia.interestTiers,
-                               ia.quantiy,
-                           )
+                           ia => {
+                               return new InterestAccount(
+                                   ia.name,
+                                   ia.interestTiers,
+                                   ia.quantity,
+                               );
+                           }
                        ),
                    );
                });
@@ -51,7 +53,7 @@ export function saveAssets(assets) {
                          return {
                              name: ia.name,
                              interestTiers: ia.interestTiers,
-                             quantity: ia.quantiy,
+                             quantity: ia.quantity,
                          };
                      }
                  ),

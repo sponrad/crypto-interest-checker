@@ -39,7 +39,7 @@ export default function AssetRow(props) {
         </View>
         <View style={{}}>
           <Text style={{...styles.text, color: '#888'}}>
-            {formatCurrency(props.asset.balance() / 12, false)} / mo
+            {formatCurrency(props.asset.yearly() / 12, false)} / mo
           </Text>
         </View>
       </View>
