@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, View, Text } from 'react-native';
+import { AppState, View, Text, Image } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AppLoading from 'expo-app-loading';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
@@ -9,7 +9,7 @@ import Home from './src/Home.jsx';
 import AddScreen from './src/AddScreen.jsx';
 import AssetScreen from './src/AssetScreen.jsx';
 
-const IS_DEBUG = true;
+const IS_DEBUG = false;
 
 const Stack = createNativeStackNavigator();
 
@@ -84,13 +84,18 @@ export function App() {
           </Stack.Navigator>
         </NavigationContainer>;
     } else {
+        const style = {
+            width: 100,
+            height: 100,
+        };
         return <View style={{
             backgroundColor: '#000',
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
         }}>
-          <Text style={{color: '#fff'}}>
+          <Image style={style} source={require('./assets/icon.png')} />
+          <Text style={{marginTop: 30, color: '#fff'}}>
             👁 Privacy 👁
           </Text>
         </View>;
