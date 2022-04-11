@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from './src/Home.jsx';
 import AddScreen from './src/AddScreen.jsx';
 import AssetScreen from './src/AssetScreen.jsx';
+import { getLastAuthTime, setLastAuthTime } from './src/localStorage.js';
 
 const IS_DEBUG = false;
 
@@ -25,20 +26,34 @@ const NavTheme = {
 };
 
 export function App() {
-    const [appIsReady, setAppIsReady] = useState(IS_DEBUG);
+    const [appIsReady, setAppIsReady] = useState(true);
+    const [userAuthed, setUserAuthed] = useState(false);
     const appState = useRef(AppState.currentState);
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
-
-    useEffect(() => {
-        if (!IS_DEBUG) {
-            LocalAuthentication.authenticateAsync({
-                promptMessage: 'test message',
+    async function doAuth() {
+        if (userAuthed) {
+            return;
+        }
+        const currentSeconds = new Date().getTime() / 1000;
+        const lastAuthTime = await getLastAuthTime();
+        if ((currentSeconds - Number(lastAuthTime)) < 10) {
+            setUserAuthed(true);
+            return;
+        }
+        if (IS_DEBUG) {
+            setUserAuthed(true);
+        } else {
+            await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Authenticate for access',
             }).then(res => {
-                setAppIsReady(res.success);
+                setUserAuthed(res.success);
+                if (res.success) {
+                    setLastAuthTime(new Date().getTime() / 1000);
+                }
             });
         }
-    }, []);
-
+    }
+    useEffect(doAuth, []);
     useEffect(() => {
         AppState.addEventListener('change', _handleAppStateChange);
 
@@ -48,21 +63,22 @@ export function App() {
     }, []);
 
     const _handleAppStateChange = nextAppState => {
-        if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-            console.log('App has come to the foreground!');
-            // TODO re-auth
+        if (appState.current === 'active' && nextAppState !== 'active') {
+            setUserAuthed(false);
+        }
+        if (appState.current !== 'active' && nextAppState === 'active') {
+            doAuth();
         }
 
         appState.current = nextAppState;
         setAppStateVisible(appState.current);
-        console.log('AppState', appState.current);
     };
 
     if (!appIsReady) {
         return <AppLoading />;
     }
 
-    if (appState.current === 'active') {
+    if (userAuthed && appState.current === 'active') {
         return <NavigationContainer theme={NavTheme}>
           <Stack.Navigator screenOptions={{
               headerShown: false,

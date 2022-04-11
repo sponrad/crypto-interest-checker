@@ -61,3 +61,14 @@ export function saveAssets(assets) {
          }))
     );
 }
+
+const authTimeKey = 'auth-time-key';
+
+export async function getLastAuthTime() {
+    const seconds = await getValueFor(authTimeKey);
+    return JSON.parse(seconds);
+}
+
+export function setLastAuthTime(seconds) {
+    save(authTimeKey, JSON.stringify(seconds));
+}
