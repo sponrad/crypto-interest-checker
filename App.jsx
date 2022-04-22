@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AppState, View, Text, Image } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AppLoading from 'expo-app-loading';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Home from './src/Home.jsx';
@@ -16,10 +16,10 @@ const Stack = createNativeStackNavigator();
 
 // https://reactnavigation.org/docs/themes/
 const NavTheme = {
-    ...DefaultTheme,
+    ...DarkTheme,
     dark: true,
     colors: {
-        ...DefaultTheme.colors,
+        ...DarkTheme.colors,
         background: 'black',
         text: '#ddd',
     },
@@ -80,26 +80,31 @@ export function App() {
     }
 
     if (userAuthed && appState.current === 'active') {
-        return <NavigationContainer theme={NavTheme}>
-          <Stack.Navigator screenOptions={{
-              headerShown: false,
-              headerStyle: { backgroundColor: 'black' },
-          }}>
-            <Stack.Screen name="Home" component={Home} />
-            <Stack.Screen name="Add"
-                          component={AddScreen}
-                          options={{
-                              headerShown: true,
-                              title: 'Add Asset',
-                          }} />
-            <Stack.Screen name="Asset"
-                          component={AssetScreen}
-                          options={{
-                              headerShown: true,
-                              title: 'Configure Asset',
-                          }} />
-          </Stack.Navigator>
-        </NavigationContainer>;
+        return <View style={{
+            flex: 1,
+            backgroundColor: '#000',
+        }}>
+          <NavigationContainer theme={NavTheme}>
+            <Stack.Navigator screenOptions={{
+                headerShown: false,
+                headerStyle: { backgroundColor: 'black' },
+            }}>
+              <Stack.Screen name="Home" component={Home} />
+              <Stack.Screen name="Add"
+                            component={AddScreen}
+                            options={{
+                                headerShown: true,
+                                title: 'Add Asset',
+                            }} />
+              <Stack.Screen name="Asset"
+                            component={AssetScreen}
+                            options={{
+                                headerShown: true,
+                                title: 'Configure Asset',
+                            }} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </View>;
     } else {
         const style = {
             width: 100,
