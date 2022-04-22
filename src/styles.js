@@ -5,6 +5,9 @@ export const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000',
+        marginRight: 15,
+        marginLeft: 15,
+        marginBottom: 15,
     },
     text: {
         color: '#ddd',
@@ -13,9 +16,7 @@ export const styles = StyleSheet.create({
     },
     input: {
         height: 40,
-        margin: 12,
         fontSize: 16,
-        padding: 10,
         color: '#ddd',
         borderBottomColor: '#fff',
         borderBottomWidth: 1,

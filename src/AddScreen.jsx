@@ -57,7 +57,7 @@ export default function AddScreen({ navigation }) {
                     value={text} />
          {loading && <ActivityIndicator color="#ccc" />}
          {!!filteredAssets &&
-          <FlatList style={{margin: 10}}
+          <FlatList style={{marginTop: 10}}
                     data={filteredAssets}
                     keyExtractor={(item) => item.symbol}
                     renderItem={renderItem} />

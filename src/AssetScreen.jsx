@@ -71,8 +71,7 @@ export default function AssetScreen({ route, navigation }) {
     }
     return <SafeAreaView style={{
         ...styles.container,
-        alignItems: 'flext-start',
-        marginTop: 15,
+        alignItems: 'flex-start',
     }}>
       <AssetRow asset={asset} />
       <Button title={editQuantity ? 'Cancel edit' : 'Edit quantity'}
@@ -83,7 +82,7 @@ export default function AssetScreen({ route, navigation }) {
            alignItems: 'center',
            marginTop: 20,
        }}>
-           <View style={{flex: 4}}>
+           <View style={{flex: 4, marginRight: 10}}>
              <TextInput
                  style={styles.input}
                  onChangeText={setQuantity}
@@ -111,11 +110,9 @@ export default function AssetScreen({ route, navigation }) {
          </View>
        </View>
       }
-      {assetGlobalInterest > 0 &&
-      <Text style={{marginLeft: 10, marginTop: 20, ...styles.text}}>
+      <Text style={{...styles.text, marginTop: 10, marginBottom: 10}}>
         Interest rate: {assetGlobalInterest}%
       </Text>
-      }
       <Button title={editInterest ? 'Cancel edit' : 'Edit interest rate'}
               onPress={() => {
                   setInterestRate(assetGlobalInterest);
@@ -127,7 +124,7 @@ export default function AssetScreen({ route, navigation }) {
            alignItems: 'center',
            marginTop: 20,
        }}>
-         <View style={{flex: 4}}>
+         <View style={{flex: 4, marginRight: 10}}>
            <TextInput
                style={styles.input}
                onChangeText={setInterestRate}

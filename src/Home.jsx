@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, Image, ActivityIndicator,
          RefreshControl, SafeAreaView, ScrollView, Button,
-         TouchableOpacity } from 'react-native';
+         TouchableOpacity, Platform } from 'react-native';
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';
@@ -123,6 +123,8 @@ export default function Home({ navigation }) {
             fontSize: 45,
             textAlign: 'center',
             paddingBottom: 7,
+            // https://stackoverflow.com/a/50078896
+            lineHeight: Platform.OS === 'ios' ? 54 : 56,
         }}>+</Text>
       </TouchableOpacity>
     </SafeAreaView>;
