@@ -10,6 +10,7 @@
             "resizeMode": "contain",
             "backgroundColor": "#000000"
         },
+        "primaryColor": "#000000",
         "updates": {
             "fallbackToCacheTimeout": 0
         },
@@ -21,13 +22,16 @@
             "bundleIdentifier": "com.sponrad.cryptointerestchecker",
             "infoPlist": {
                 "NSFaceIDUsageDescription": "Enabling Face ID allows you quick and secure access to your data."
-            }
+            },
+            "buildNumber": "1.0.0",
         },
         "android": {
             "adaptiveIcon": {
                 "foregroundImage": "./assets/icon.png",
                 "backgroundColor": "#000000"
-            }
+            },
+            "package": "com.sponrad.cryptointerestchecker",
+            "permissions": []
         },
         "web": {
             "favicon": "./assets/favicon.png"
