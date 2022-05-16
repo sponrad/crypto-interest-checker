@@ -3,16 +3,7 @@ function numberWithCommas(x) {
 }
 
 export function formatCurrency(amount, showDecimals=true) {
-    if (showDecimals) {
-        return new Intl.NumberFormat(
-            'en-US',
-            {
-                style: 'currency',
-                currency: 'USD',
-                currencySign: 'accounting'
-            }
-        ).format(amount)
-    } else {
-        return `\$${numberWithCommas(Math.round(amount))}`;
-    }
+    const fractionDigits = showDecimals ? 2 : 0;
+    const rounded = Number(amount).toFixed(fractionDigits);
+    return `\$${numberWithCommas(rounded)}`;
 }
