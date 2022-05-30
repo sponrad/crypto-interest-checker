@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, Image, ActivityIndicator,
-         RefreshControl, SafeAreaView, ScrollView, Button,
+         RefreshControl, SafeAreaView, Button,
          TouchableOpacity, Platform } from 'react-native';
+import DraggableFlatList, {
+    ScaleDecorator,
+} from "react-native-draggable-flatlist";
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';
@@ -66,7 +69,6 @@ export default function Home({ navigation }) {
       </View>
     ||
      <View style={{
-         margin: 30,
          flex: 1,
          alignContent: 'center',
          justifyContent: 'center',
@@ -82,24 +84,48 @@ export default function Home({ navigation }) {
        }
      </View>
     }
-      <ScrollView refreshControl={
-          <RefreshControl refreshing={refreshing}
-                          colors={['#ddd']}
-                          tintColor="#ddd"
-                          onRefresh={pullRefresh} />
-      }>
-        {holdings.map(holding => {
-            return <TouchableOpacity key={holding.symbol}
-                                     onPress={() => {
-                                         navigation.navigate('Asset', {
-                                             symbol: holding.symbol,
-                                             price: holding.price,
-                                         });
-                                     }}>
-              <AssetRow asset={holding} />
-            </TouchableOpacity>;
-        })}
-      </ScrollView>
+      <DraggableFlatList
+          data={holdings}
+          ListFooterComponent={
+              <View style={{height: 100}} />
+          }
+          onDragEnd={({ data }) => {
+              setHoldings(data);
+              // also change the order using saveAssets
+              getAssets().then(assets => {
+                  saveAssets(
+                      data.map(holding => assets.find(
+                          asset => asset.symbol === holding.symbol)
+                      )
+                  );
+              });
+          }}
+          keyExtractor={(holding) => holding.symbol}
+          refreshControl={
+              <RefreshControl refreshing={refreshing}
+                              colors={['#ddd']}
+                              tintColor="#ddd"
+                              onRefresh={pullRefresh} />
+          }
+          renderItem={({ item, drag, isActive }: RenderItemParams<Item>) => {
+              const holding = item;
+              if (!holding) {
+                  return null;
+              }
+              return <ScaleDecorator key={holding.symbol}>
+                <TouchableOpacity
+                    onLongPress={drag}
+                    disabled={isActive}
+                    onPress={() => {
+                        navigation.navigate('Asset', {
+                            symbol: holding.symbol,
+                            price: holding.price,
+                        });
+                    }}>
+                  <AssetRow asset={holding} />
+                </TouchableOpacity>
+              </ScaleDecorator>;
+          }} />
       <TouchableOpacity
           style={{
               borderWidth: 1,

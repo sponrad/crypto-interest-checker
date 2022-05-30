@@ -5,8 +5,8 @@ export const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000000',
-        marginRight: 15,
-        marginLeft: 15,
+        marginRight: 0,
+        marginLeft: 0,
         marginBottom: 15,
     },
     text: {

@@ -60,6 +60,8 @@ export default function AddScreen({ navigation }) {
               alignContent: 'center',
               alignItems: 'center',
               marginBottom: 10,
+              marginLeft: 15,
+              marginRight: 15,
           }}>
             <View style={{marginRight: 10}}>
               <AssetImage asset={asset} />
@@ -75,7 +77,11 @@ export default function AddScreen({ navigation }) {
       {!selectedAsset &&
        <View>
          <TextInput onChangeText={onChangeText}
-                    style={styles.input}
+                    style={{
+                        ...styles.input,
+                        marginRight: 15,
+                        marginLeft: 15,
+                    }}
                     placeholder='Filter name or symbol...'
                     placeholderTextColor='#999'
                     value={text} />
@@ -96,7 +102,10 @@ export default function AddScreen({ navigation }) {
        </View>
       }
       {selectedAsset &&
-       <View>
+       <View style={{
+           marginLeft: 15,
+           marginRight: 15,
+       }}>
          <View style={{
              flexDirection: 'row',
              alignContent: 'center',

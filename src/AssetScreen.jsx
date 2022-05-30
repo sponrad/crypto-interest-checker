@@ -72,6 +72,8 @@ export default function AssetScreen({ route, navigation }) {
     return <SafeAreaView style={{
         ...styles.container,
         alignItems: 'flex-start',
+        marginLeft: 15,
+        marginRight: 15,
     }}>
       <AssetRow asset={asset} />
       <Button title={editQuantity ? 'Cancel edit' : 'Edit quantity'}
