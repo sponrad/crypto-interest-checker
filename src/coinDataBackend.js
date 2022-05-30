@@ -3,7 +3,7 @@ import { Asset } from './models.js';
 const cryptoCompareBackend = {
     // https://min-api.cryptocompare.com/documentation
     getTopAssets: (page=0) => {
-        const url = 'https://min-api.cryptocompare.com/data/top/mktcapfull?limit=100&tsym=USD';
+        const url = `https://min-api.cryptocompare.com/data/top/mktcapfull?page=${page}&limit=100&tsym=USD`;
         const baseImageUrl = 'https://www.cryptocompare.com/';
         return fetch(url)
             .then(res => res.json())
