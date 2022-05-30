@@ -10,8 +10,6 @@ function getAllFuncs(toCheck) {
     });
 }
 
-
-
 export class Asset {
     constructor(
         name,

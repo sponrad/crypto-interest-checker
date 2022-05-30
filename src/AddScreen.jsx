@@ -14,19 +14,43 @@ export default function AddScreen({ navigation }) {
     const [quantity, onChangeQuantity] = useState(null);
     const [availableAssets, setAvailableAssets] = useState([]);
     const [loading, setLoading] = useState(false);
-    useEffect(() => {
+    const [page, setPage] = useState(0);
+    const [loadedAll, setLoadedAll] = useState(false);
+    function loadMore() {
+        if (loading || loadedAll) {
+            return;
+        }
         setLoading(true);
-        coinDataBackend.getTopAssets().then((assets) => {
-            setAvailableAssets(assets);
+        coinDataBackend.getTopAssets(page).then((assets) => {
+            setPage(page + 1);
+            // errors for any key collision so...
+            // need to dedupe :/
+            const currentSymbols = availableAssets.map(asset => asset.symbol);
+            const dedupedAssets = assets.filter(
+                asset => !currentSymbols.includes(asset.symbol)
+            );
+            setAvailableAssets(availableAssets.concat(dedupedAssets));
+            if (assets.length === 0) {
+                setLoadedAll(true);
+            }
             setLoading(false);
         });
-    }, []);
+    }
+    useEffect(loadMore, []);
     const filteredAssets = useMemo(
-        () => availableAssets.filter(asset =>
-            asset.name.toLowerCase().includes(text.toLowerCase())
-        )
-        ,[text, availableAssets]
+        () => availableAssets.filter(asset => {
+            return asset.name.toLowerCase().includes(
+                text.toLowerCase()
+            ) || asset.symbol === text;
+        }),
+        [text, availableAssets]
     );
+    if (!loading
+        && !loadedAll
+        && !!text
+        && filteredAssets.length === 0) {
+        loadMore();
+    }
     const renderItem = ({ item }) => {
         const asset = item;
         return <TouchableHighlight key={asset.symbol}
@@ -55,7 +79,14 @@ export default function AddScreen({ navigation }) {
                     placeholder='Filter name or symbol...'
                     placeholderTextColor='#999'
                     value={text} />
-         {loading && <ActivityIndicator color="#ccc" />}
+         {loading && <ActivityIndicator size="large"
+                                        style={{marginTop: 12}}
+                                        color="#eee" />}
+         {loadedAll && filteredAssets.length === 0 &&
+          <Text style={styles.text}>
+            No results
+          </Text>
+         }
          {!!filteredAssets &&
           <FlatList style={{marginTop: 10}}
                     data={filteredAssets}
