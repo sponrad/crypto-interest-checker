@@ -41,7 +41,7 @@ export default function AddScreen({ navigation }) {
         () => availableAssets.filter(asset => {
             return asset.name.toLowerCase().includes(
                 text.toLowerCase()
-            ) || asset.symbol === text;
+            ) || asset.symbol.toLowerCase() === text.toLowerCase();
         }),
         [text, availableAssets]
     );
