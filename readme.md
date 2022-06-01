@@ -7,6 +7,8 @@ npm start
 
 need to have the expo go app installed
 
+or can do an ios emulator with `i` or `shift + i`
+
 ### test device build
 
 ```
@@ -21,5 +23,8 @@ eas device:create
 ### production build
 
 ```
-eas build --platform ios
+eas build --platform all
+eas submit -p ios
 ```
+
+Android currently needs to be copied over to the playstore console manually.
