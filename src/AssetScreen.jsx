@@ -117,7 +117,7 @@ export default function AssetScreen({ route, navigation }) {
       </Text>
       <Button title={editInterest ? 'Cancel edit' : 'Edit interest rate'}
               onPress={() => {
-                  setInterestRate(assetGlobalInterest);
+                  setInterestRate(assetGlobalInterest.toString());
                   setEditInterest(!editInterest);
               }} />
       {editInterest &&
