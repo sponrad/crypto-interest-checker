@@ -42,7 +42,9 @@ export default function Home({ navigation }) {
         setRefreshing(true);
         refresh();
     }
-    useEffect(refresh, []);
+    useEffect(() => {
+        refresh();
+    }, []);
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             refresh();

@@ -53,7 +53,9 @@ export function App() {
             });
         }
     }
-    useEffect(doAuth, []);
+    useEffect(() => {
+        doAuth();
+    }, []);
     useEffect(() => {
         AppState.addEventListener('change', _handleAppStateChange);
 
