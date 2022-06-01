@@ -37,10 +37,12 @@ export default function AssetScreen({ route, navigation }) {
         );
         assets[index].quantity = Number(quantity);
         assets[index].price = asset.price;
+        assets[index].setInterestRate(
+            Number(interestRate) || assets[index].globalInterest()
+        );
         saveAssets(assets);
         setAsset(assets[index]);
         setEditQuantity(false);
-        // also update the interest quantity, though only if we are not on a pro plan
     }
 
     async function onRemove() {
@@ -64,11 +66,6 @@ export default function AssetScreen({ route, navigation }) {
         setEditInterest(false);
     }
 
-    let assetGlobalInterest = 0;
-    if (asset.interestAccounts.length > 0) {
-        // this will get way more complicated
-        assetGlobalInterest = asset.interestAccounts[0].interestTiers[0].rate;
-    }
     return <SafeAreaView style={{
         ...styles.container,
         alignItems: 'flex-start',
@@ -113,11 +110,11 @@ export default function AssetScreen({ route, navigation }) {
        </View>
       }
       <Text style={{...styles.text, marginTop: 10, marginBottom: 10}}>
-        Interest rate: {assetGlobalInterest}%
+        Interest rate: {asset.globalInterest()}%
       </Text>
       <Button title={editInterest ? 'Cancel edit' : 'Edit interest rate'}
               onPress={() => {
-                  setInterestRate(assetGlobalInterest.toString());
+                  setInterestRate(asset.globalInterest().toString());
                   setEditInterest(!editInterest);
               }} />
       {editInterest &&

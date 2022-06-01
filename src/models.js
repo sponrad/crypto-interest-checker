@@ -65,6 +65,19 @@ export class Asset {
             ),
         ];
     }
+
+    globalInterest() {
+        let assetGlobalInterest = 0;
+        if (this.interestAccounts.length > 0) {
+            // this will get more complicated
+            // since ill have to average the interest rate over the quantities
+            // and make sure to only use the average for reads
+            assetGlobalInterest = this.interestAccounts[0]
+                                      .interestTiers[0]
+                                      .rate;
+        }
+        return assetGlobalInterest;
+    }
 }
 
 export class InterestAccount {
