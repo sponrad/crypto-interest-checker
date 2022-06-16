@@ -68,24 +68,24 @@ export default function Home({ navigation }) {
          <Text style={{...styles.text, fontSize: 25, fontWeight: 'bold'}}>
            {formatCurrency(totalInterest / 12, false)} / mo
          </Text>
-      </View>
-    ||
-     <View style={{
-         flex: 1,
-         alignContent: 'center',
-         justifyContent: 'center',
-     }}>
-       {!refreshing &&
-        <Text style={{
-            ...styles.text,
-            fontSize: 25,
-            fontWeight: 'bold',
-        }}>
-          Click below to add some assets.
-        </Text>
-       }
-     </View>
-    }
+       </View>
+      ||
+       <View style={{
+           flex: 1,
+           alignContent: 'center',
+           justifyContent: 'center',
+       }}>
+         {!refreshing &&
+          <Text style={{
+              ...styles.text,
+              fontSize: 25,
+              fontWeight: 'bold',
+          }}>
+            Click below to add some assets.
+          </Text>
+         }
+       </View>
+      }
       <DraggableFlatList
           data={holdings}
           ListFooterComponent={
