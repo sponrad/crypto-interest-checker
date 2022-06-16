@@ -5,19 +5,23 @@ import { Text, View, Image, ActivityIndicator,
 import DraggableFlatList, {
     ScaleDecorator,
 } from "react-native-draggable-flatlist";
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';
 import { formatCurrency } from './util.js';
-import { getAssets, saveAssets } from './localStorage.js';
+import { getAssets, saveAssets, getDreamMultiple } from './localStorage.js';
 import AssetRow from './AssetRow.jsx';
 
 export default function Home({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [holdings, setHoldings] = useState([]);
+    const [multiple, setMultiple] = useState(1);
 
     async function refresh() {
+        const theMultiple = await getDreamMultiple() || 1;
+        setMultiple(theMultiple);
         const assets = await getAssets();
         if (assets.length === 0) {
             setRefreshing(false);
@@ -29,7 +33,7 @@ export default function Home({ navigation }) {
         coinDataBackend.getAssetsPrices(assets).then(prices => {
             setHoldings(
                 assets.map(asset => {
-                    asset.price = prices[asset.symbol];
+                    asset.price = prices[asset.symbol] * theMultiple;
                     return asset;
                 })
             )
@@ -60,8 +64,45 @@ export default function Home({ navigation }) {
     const totalInterest = holdings.reduce((prev, curr) => prev + curr.yearly(), 0);
 
     return <SafeAreaView style={styles.container}>
-    {holdings.length > 0 &&
-      <View style={{marginTop: 30, marginBottom: 30}}>
+      <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginLeft: 5,
+          marginRight: 5,
+          marginTop: 0,
+          marginBottom: 0,
+          padding: 0,
+      }}>
+        <TouchableOpacity onPress={() => {
+            navigation.navigate('Settings');
+        }}>
+          <Ionicons name="menu" size={40} color="#ddd" />
+        </TouchableOpacity>
+        {/*
+            <Image style={{width: 40, height: 40}} source={require('../assets/icon.png')} />
+          */}
+        <TouchableOpacity onPress={() => {
+            navigation.navigate('Add');
+        }}>
+          <Ionicons name="add-circle-outline" size={40} color="#ddd" />
+        </TouchableOpacity>
+      </View>
+      {multiple !== 1 &&
+       <TouchableOpacity onPress={() => {
+           navigation.navigate('Settings');
+       }}>
+         <Text style={{
+             ...styles.text,
+             fontSize: 20,
+             fontWeight: 'bold',
+             color: multiple >= 1 ? 'green' : 'red',
+         }}>
+           Prices multiplied {multiple}x
+         </Text>
+       </TouchableOpacity>
+      }
+      {holdings.length > 0 &&
+       <View style={{marginTop: 10, marginBottom: 20}}>
          <Text style={{...styles.text, fontSize: 40, fontWeight: 'bold'}}>
            {formatCurrency(totalBalance, false)}
          </Text>
@@ -128,32 +169,5 @@ export default function Home({ navigation }) {
                 </TouchableOpacity>
               </ScaleDecorator>;
           }} />
-      <TouchableOpacity
-          style={{
-              borderWidth: 1,
-              borderColor: 'rgba(0,0,0,0.2)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 60,
-              position: 'absolute',
-              bottom: 30,
-              right: 20,
-              height: 60,
-              backgroundColor: '#999',
-              borderRadius: 30,
-              flex: 1,
-              flexDirection: 'row',
-          }}
-          onPress={() => {
-              navigation.navigate('Add');
-          }}>
-        <Text style={{
-            fontSize: 45,
-            textAlign: 'center',
-            paddingBottom: 7,
-            // https://stackoverflow.com/a/50078896
-            lineHeight: Platform.OS === 'ios' ? 54 : 56,
-        }}>+</Text>
-      </TouchableOpacity>
     </SafeAreaView>;
 }

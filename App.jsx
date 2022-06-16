@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from './src/Home.jsx';
 import AddScreen from './src/AddScreen.jsx';
 import AssetScreen from './src/AssetScreen.jsx';
+import SettingsScreen from './src/SettingsScreen.jsx';
 import { getLastAuthTime, setLastAuthTime } from './src/localStorage.js';
 
 const IS_DEBUG = false;
@@ -103,6 +104,12 @@ export function App() {
                             options={{
                                 headerShown: true,
                                 title: 'Configure Asset',
+                            }} />
+              <Stack.Screen name="Settings"
+                            component={SettingsScreen}
+                            options={{
+                                headerShown: true,
+                                title: 'Settings',
                             }} />
             </Stack.Navigator>
           </NavigationContainer>

@@ -21,4 +21,12 @@ export const styles = StyleSheet.create({
         borderBottomColor: '#fff',
         borderBottomWidth: 1,
     },
+    settingSection: {
+        paddingLeft: 5,
+        paddingRight: 5,
+        paddingTop: 10,
+        paddingBottom: 10,
+        borderBottomColor: '#151515',
+        borderBottomWidth: 1,
+    },
 });

@@ -18,7 +18,7 @@ export default function AssetRow(props) {
         <AssetImage asset={props.asset} />
       </View>
 
-      <View style={{flex: 1, alignItems: 'flex-start', flexDirect: 'column'}}>
+      <View style={{flex: 1, alignItems: 'flex-start', flexDirection: 'column'}}>
         <View style={{}}>
           <Text style={styles.text}>
             {props.asset.name}
@@ -26,12 +26,12 @@ export default function AssetRow(props) {
         </View>
         <View style={{}}>
           <Text style={{...styles.text, color: '#888'}}>
-            {props.asset.quantity} | {formatCurrency(props.asset.price)}
+            {props.asset.quantity} @ {formatCurrency(props.asset.price)}
           </Text>
         </View>
       </View>
 
-      <View style={{flex: 1, alignItems: 'flex-end', flexDirect: 'column'}}>
+      <View style={{flex: 1, alignItems: 'flex-end', flexDirection: 'column'}}>
         <View style={{}}>
           <Text style={{...styles.text, fontWeight: 'bold', color: 'green'}}>
             {formatCurrency(props.asset.balance(), false)}
