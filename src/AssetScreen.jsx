@@ -15,7 +15,7 @@ export default function AssetScreen({ route, navigation }) {
     const [editInterest, setEditInterest] = useState(false);
     const [interestRate, setInterestRate] = useState(0);
 
-    useEffect(async () => {
+    async function load() {
         const assets = await getAssets();
         const theAsset = assets.find(asset => asset.symbol === symbol);
         navigation.setOptions({
@@ -24,8 +24,10 @@ export default function AssetScreen({ route, navigation }) {
         theAsset.price = price;
         setAsset(theAsset);
         setQuantity(theAsset.quantity.toString());
+    }
+    useEffect(() => {
+        load();
     }, []);
-
     if (!asset) {
         return null;
     }
