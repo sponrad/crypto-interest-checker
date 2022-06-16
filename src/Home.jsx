@@ -63,7 +63,10 @@ export default function Home({ navigation }) {
     const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance(), 0);
     const totalInterest = holdings.reduce((prev, curr) => prev + curr.yearly(), 0);
 
-    return <SafeAreaView style={styles.container}>
+    return <SafeAreaView style={{
+        ...styles.container,
+        marginTop: Platform.OS === "android" ? 30 : 0,
+    }}>
       <View style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -117,13 +120,17 @@ export default function Home({ navigation }) {
            justifyContent: 'center',
        }}>
          {!refreshing &&
-          <Text style={{
-              ...styles.text,
-              fontSize: 25,
-              fontWeight: 'bold',
+          <TouchableOpacity onPress={() => {
+              navigation.navigate('Add');
           }}>
-            Click below to add some assets.
-          </Text>
+            <Text style={{
+                ...styles.text,
+                fontSize: 25,
+                fontWeight: 'bold',
+            }}>
+              Click to add some assets.
+            </Text>
+          </TouchableOpacity>
          }
        </View>
       }
