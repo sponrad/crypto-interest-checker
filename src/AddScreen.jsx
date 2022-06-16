@@ -48,7 +48,7 @@ export default function AddScreen({ navigation }) {
     if (!loading
         && !loadedAll
         && !!text
-        && filteredAssets.length === 0) {
+        && filteredAssets.length < 10) {
         loadMore();
     }
     const renderItem = ({ item }) => {
