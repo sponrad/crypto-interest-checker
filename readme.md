@@ -28,3 +28,9 @@ eas submit -p ios
 ```
 
 Android currently needs to be copied over to the playstore console manually.
+
+
+iOS needs screenshots for:
+6.5" 11 pro max
+5.5" 8 plus
+12.9" ipad pro 
