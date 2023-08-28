@@ -1,41 +1,53 @@
 {
-    "expo": {
-        "name": "Crypto Checker",
-        "slug": "crypto-interest-checker",
-        "version": "1.0.5",
-        "orientation": "portrait",
-        "icon": "./assets/icon.png",
-        "splash": {
-            "image": "./assets/splash.png",
-            "resizeMode": "contain",
-            "backgroundColor": "#000000"
-        },
-        "primaryColor": "#000000",
-        "updates": {
-            "fallbackToCacheTimeout": 0
-        },
-        "assetBundlePatterns": [
-            "**/*"
-        ],
-        "ios": {
-            "buildNumber": "1.0.5",
-            "supportsTablet": true,
-            "bundleIdentifier": "com.sponrad.cryptointerestchecker",
-            "infoPlist": {
-                "NSFaceIDUsageDescription": "Enabling Face ID allows you quick and secure access to your data."
-            }
-        },
-        "android": {
-            "versionCode": 8,
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/icon.png",
-                "backgroundColor": "#000000"
-            },
-            "package": "com.sponrad.cryptointerestchecker",
-            "permissions": []
-        },
-        "web": {
-            "favicon": "./assets/favicon.png"
+  "expo": {
+    "name": "Crypto Checker",
+    "slug": "crypto-interest-checker",
+    "version": "1.0.5",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "primaryColor": "#000000",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "buildNumber": "1.0.5",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sponrad.cryptointerestchecker",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Enabling Face ID allows you quick and secure access to your data."
+      }
+    },
+    "android": {
+      "versionCode": 9,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.sponrad.cryptointerestchecker",
+      "permissions": []
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        'expo-build-properties',
+        {
+          android: {
+            compileSdkVersion: 33,
+            targetSdkVersion: 33,
+            buildToolsVersion: '33.0.0'
+          }
         }
-    }
+      ]
+    ]
+  }
 }
