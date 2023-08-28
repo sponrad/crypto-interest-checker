@@ -12,6 +12,7 @@ const cryptoCompareBackend = {
                     assetData.CoinInfo.FullName,
                     assetData.CoinInfo.Internal,
                     `${baseImageUrl}${assetData.CoinInfo.ImageUrl}`
+                    // assetData.Display.MKTCAP.replace('$ ', '$'),
                 );
             }));
     },
