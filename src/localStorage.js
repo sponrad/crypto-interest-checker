@@ -1,13 +1,23 @@
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Asset, InterestAccount } from './models.js';
 
+const secureStorageKey = (key) => `secure:${key}`;
+
 async function save(key, value) {
+    if (Platform.OS === 'web') {
+        await AsyncStorage.setItem(secureStorageKey(key), value);
+        return;
+    }
     await SecureStore.setItemAsync(key, value);
 }
 
 async function getValueFor(key) {
-    let result = await SecureStore.getItemAsync(key);
+    if (Platform.OS === 'web') {
+        return await AsyncStorage.getItem(secureStorageKey(key));
+    }
+    const result = await SecureStore.getItemAsync(key);
     if (!result) {
         return null;
     }
@@ -124,6 +134,9 @@ const authTimeKey = 'auth-time-key';
 
 export async function getLastAuthTime() {
     const seconds = await getValueFor(authTimeKey);
+    if (seconds == null) {
+        return null;
+    }
     return JSON.parse(seconds);
 }
 

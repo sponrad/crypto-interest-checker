@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, View, Text, Image } from 'react-native';
+import { AppState, View, Text, Image, Platform } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
-import AppLoading from 'expo-app-loading';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -27,12 +26,15 @@ const NavTheme = {
 };
 
 export function App() {
-    const [appIsReady, setAppIsReady] = useState(true);
     const [userAuthed, setUserAuthed] = useState(false);
     const appState = useRef(AppState.currentState);
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
     async function doAuth() {
         if (userAuthed) {
+            return;
+        }
+        if (Platform.OS === 'web') {
+            setUserAuthed(true);
             return;
         }
         const currentSeconds = new Date().getTime() / 1000;
@@ -58,11 +60,8 @@ export function App() {
         doAuth();
     }, []);
     useEffect(() => {
-        AppState.addEventListener('change', _handleAppStateChange);
-
-        return () => {
-            AppState.removeEventListener('change', _handleAppStateChange);
-        };
+        const subscription = AppState.addEventListener('change', _handleAppStateChange);
+        return () => subscription.remove();
     }, []);
 
     const _handleAppStateChange = nextAppState => {
@@ -77,10 +76,6 @@ export function App() {
         setAppStateVisible(appState.current);
         console.log('AppState', appState.current);
     };
-
-    if (!appIsReady) {
-        return <AppLoading />;
-    }
 
     if (userAuthed && appState.current === 'active') {
         return <View style={{

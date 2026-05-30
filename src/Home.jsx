@@ -157,7 +157,7 @@ export default function Home({ navigation }) {
                               tintColor="#ddd"
                               onRefresh={pullRefresh} />
           }
-          renderItem={({ item, drag, isActive }: RenderItemParams<Item>) => {
+          renderItem={({ item, drag, isActive }) => {
               const holding = item;
               if (!holding) {
                   return null;
