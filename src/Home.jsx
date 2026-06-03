@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, Image, ActivityIndicator,
-         RefreshControl, SafeAreaView, Button,
-         TouchableOpacity, Platform } from 'react-native';
-import DraggableFlatList, {
-    ScaleDecorator,
-} from "react-native-draggable-flatlist";
+import React, { useState, useEffect } from 'react';
+import {
+    Text,
+    View,
+    ActivityIndicator,
+    RefreshControl,
+    SafeAreaView,
+    TouchableOpacity,
+    Pressable,
+    Platform,
+} from 'react-native';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { coinDataBackend } from './coinDataBackend.js';
@@ -20,7 +25,7 @@ export default function Home({ navigation }) {
     const [multiple, setMultiple] = useState(1);
 
     async function refresh() {
-        const theMultiple = await getDreamMultiple() || 1;
+        const theMultiple = (await getDreamMultiple()) || 1;
         setMultiple(theMultiple);
         const assets = await getAssets();
         if (assets.length === 0) {
@@ -29,152 +34,196 @@ export default function Home({ navigation }) {
             setHoldings([]);
             return;
         }
-        // TODO update any changed quantities before we wait for price refreshment
-        coinDataBackend.getAssetsPrices(assets).then(prices => {
+        coinDataBackend.getAssetsPrices(assets).then((prices) => {
             setHoldings(
-                assets.map(asset => {
+                assets.map((asset) => {
                     asset.price = prices[asset.symbol] * theMultiple;
                     return asset;
                 })
-            )
+            );
         }).finally(() => {
             setRefreshing(false);
             setLoading(false);
         });
     }
+
     function pullRefresh() {
         setRefreshing(true);
         refresh();
     }
+
     useEffect(() => {
         refresh();
     }, []);
+
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             refresh();
         });
         return unsubscribe;
     }, [navigation]);
+
     if (loading) {
-        return <SafeAreaView style={styles.container}>
-          <ActivityIndicator color='#ccc' size='large' />
-        </SafeAreaView>;
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator color="#22c55e" size="large" />
+                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                        Loading portfolio
+                    </Text>
+                </View>
+            </SafeAreaView>
+        );
     }
+
     const totalBalance = holdings.reduce((prev, curr) => prev + curr.balance(), 0);
     const totalInterest = holdings.reduce((prev, curr) => prev + curr.yearly(), 0);
+    const hasHoldings = holdings.length > 0;
 
-    return <SafeAreaView style={{
-        ...styles.container,
-        marginTop: Platform.OS === "android" ? 30 : 0,
-    }}>
-      <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginLeft: 5,
-          marginRight: 5,
-          marginTop: 0,
-          marginBottom: 0,
-          padding: 0,
-      }}>
-        <TouchableOpacity onPress={() => {
-            navigation.navigate('Settings');
-        }}>
-          <Ionicons name="menu" size={40} color="#ddd" />
-        </TouchableOpacity>
-        {/*
-            <Image style={{width: 40, height: 40}} source={require('../assets/icon.png')} />
-          */}
-        <TouchableOpacity onPress={() => {
-            navigation.navigate('Add');
-        }}>
-          <Ionicons name="add-circle-outline" size={40} color="#ddd" />
-        </TouchableOpacity>
-      </View>
-      {multiple !== 1 &&
-       <TouchableOpacity onPress={() => {
-           navigation.navigate('Settings');
-       }}>
-         <Text style={{
-             ...styles.text,
-             fontSize: 20,
-             fontWeight: 'bold',
-             color: multiple >= 1 ? 'green' : 'red',
-         }}>
-           Prices multiplied {multiple}x
-         </Text>
-       </TouchableOpacity>
-      }
-      {holdings.length > 0 &&
-       <View style={{marginTop: 10, marginBottom: 20}}>
-         <Text style={{...styles.text, fontSize: 40, fontWeight: 'bold'}}>
-           {formatCurrency(totalBalance, false)}
-         </Text>
-         <Text style={{...styles.text, fontSize: 25, fontWeight: 'bold'}}>
-           {formatCurrency(totalInterest / 12, false)} / mo
-         </Text>
-       </View>
-      ||
-       <View style={{
-           flex: 1,
-           alignContent: 'center',
-           justifyContent: 'center',
-       }}>
-         {!refreshing &&
-          <TouchableOpacity onPress={() => {
-              navigation.navigate('Add');
-          }}>
-            <Text style={{
-                ...styles.text,
-                fontSize: 25,
-                fontWeight: 'bold',
-            }}>
-              Click to add some assets.
-            </Text>
-          </TouchableOpacity>
-         }
-       </View>
-      }
-      <DraggableFlatList
-          data={holdings}
-          ListFooterComponent={
-              <View style={{height: 100}} />
-          }
-          onDragEnd={({ data }) => {
-              setHoldings(data);
-              // also change the order using saveAssets
-              getAssets().then(assets => {
-                  saveAssets(
-                      data.map(holding => assets.find(
-                          asset => asset.symbol === holding.symbol)
-                      )
-                  );
-              });
-          }}
-          keyExtractor={(holding) => holding.symbol}
-          refreshControl={
-              <RefreshControl refreshing={refreshing}
-                              colors={['#ddd']}
-                              tintColor="#ddd"
-                              onRefresh={pullRefresh} />
-          }
-          renderItem={({ item, drag, isActive }) => {
-              const holding = item;
-              if (!holding) {
-                  return null;
-              }
-              return <ScaleDecorator key={holding.symbol}>
-                <TouchableOpacity
-                    onLongPress={drag}
-                    disabled={isActive}
-                    onPress={() => {
-                        navigation.navigate('Asset', {
-                            symbol: holding.symbol,
-                            price: holding.price,
-                        });
-                    }}>
-                  <AssetRow asset={holding} />
-                </TouchableOpacity>
-              </ScaleDecorator>;
-          }} />
-    </SafeAreaView>;
+    function ListHeader() {
+        return (
+            <View
+                style={{
+                    paddingHorizontal: 16,
+                    paddingTop: Platform.OS === 'android' ? 8 : 0,
+                }}
+            >
+                <View style={styles.homeToolbar}>
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.iconButton,
+                            pressed && { opacity: 0.85 },
+                        ]}
+                        onPress={() => navigation.navigate('Settings')}
+                    >
+                        <Ionicons name="menu" size={24} color="#ddd" />
+                    </Pressable>
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.iconButton,
+                            pressed && { opacity: 0.85 },
+                        ]}
+                        onPress={() => navigation.navigate('Add')}
+                    >
+                        <Ionicons name="add" size={26} color="#ddd" />
+                    </Pressable>
+                </View>
+
+                {multiple !== 1 && (
+                    <Pressable
+                        onPress={() => navigation.navigate('Settings')}
+                        style={[
+                            styles.dreamBanner,
+                            multiple < 1 && styles.dreamBannerNegative,
+                        ]}
+                    >
+                        <Text
+                            style={[
+                                styles.dreamBannerText,
+                                { color: multiple >= 1 ? '#22c55e' : '#f87171' },
+                            ]}
+                        >
+                            Prices multiplied {multiple}x — tap to adjust
+                        </Text>
+                    </Pressable>
+                )}
+
+                {hasHoldings ? (
+                    <View style={[styles.card, { marginBottom: 12 }]}>
+                        <Text style={styles.fieldLabel}>Total balance</Text>
+                        <Text
+                            style={styles.portfolioBalance}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.5}
+                        >
+                            {formatCurrency(totalBalance, false)}
+                        </Text>
+                        <Text
+                            style={styles.portfolioInterest}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.7}
+                        >
+                            {formatCurrency(totalInterest / 12, false)} / mo interest
+                        </Text>
+                    </View>
+                ) : (
+                    !refreshing && (
+                        <View style={[styles.card, { alignItems: 'center' }]}>
+                            <Text style={styles.sectionTitle}>No assets yet</Text>
+                            <Text style={[styles.sectionDescription, { textAlign: 'center' }]}>
+                                Add holdings to track balances and interest.
+                            </Text>
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.buttonSecondary,
+                                    { marginTop: 16, alignSelf: 'stretch' },
+                                    pressed && { opacity: 0.85 },
+                                ]}
+                                onPress={() => navigation.navigate('Add')}
+                            >
+                                <Text style={styles.buttonTextSecondary}>Add assets</Text>
+                            </Pressable>
+                        </View>
+                    )
+                )}
+            </View>
+        );
+    }
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <DraggableFlatList
+                data={holdings}
+                keyExtractor={(holding) => holding.symbol}
+                ListHeaderComponent={ListHeader}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                ListFooterComponent={<View style={{ height: 24 }} />}
+                onDragEnd={({ data }) => {
+                    setHoldings(data);
+                    getAssets().then((assets) => {
+                        saveAssets(
+                            data.map((holding) =>
+                                assets.find((asset) => asset.symbol === holding.symbol)
+                            )
+                        );
+                    });
+                }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        colors={['#22c55e']}
+                        tintColor="#22c55e"
+                        onRefresh={pullRefresh}
+                    />
+                }
+                renderItem={({ item, drag, isActive }) => {
+                    const holding = item;
+                    if (!holding) {
+                        return null;
+                    }
+                    return (
+                        <ScaleDecorator>
+                            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                                <TouchableOpacity
+                                    onLongPress={drag}
+                                    disabled={isActive}
+                                    activeOpacity={0.85}
+                                    onPress={() => {
+                                        navigation.navigate('Asset', {
+                                            symbol: holding.symbol,
+                                            price: holding.price,
+                                        });
+                                    }}
+                                >
+                                    <AssetRow asset={holding} isActive={isActive} />
+                                </TouchableOpacity>
+                            </View>
+                        </ScaleDecorator>
+                    );
+                }}
+            />
+        </SafeAreaView>
+    );
 }

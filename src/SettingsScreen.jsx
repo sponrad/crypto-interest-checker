@@ -1,19 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, Button, ActivityIndicator,
-         SafeAreaView, TouchableHighlight, TextInput} from 'react-native';
+import {
+    Text,
+    View,
+    SafeAreaView,
+    TextInput,
+    Pressable,
+    ScrollView,
+} from 'react-native';
 
 import { styles } from './styles.js';
 import { getDreamMultiple, setDreamMultiple } from './localStorage.js';
 
+const PRESETS = ['0.5', '2', '4', '8', '10', '15', '20'];
+
 export default function SettingsScreen({ navigation }) {
     const [multiple, setMultiple] = useState('1');
+
     useEffect(() => {
-        getDreamMultiple().then(multiple => {
-            if (multiple) {
-                setMultiple(multiple.toString());
+        getDreamMultiple().then((value) => {
+            if (value) {
+                setMultiple(value.toString());
             }
         });
     }, []);
+
+    const multipleNum = Number(multiple) || 1;
+    const isDreamMode = multipleNum >= 1;
+    const isActive = (value) => multipleNum === Number(value);
+
     function updateDreamMultiple(val) {
         setMultiple(val);
         setDreamMultiple(val);
@@ -24,59 +38,105 @@ export default function SettingsScreen({ navigation }) {
         navigation.navigate('Home');
     }
 
-    return <SafeAreaView style={styles.container}>
-      <View style={styles.settingSection}>
-        <Text style={{...styles.text, textAlign: 'left', fontWeight: 'bold'}}>
-          {(!multiple || multiple >= 1) && 'Dream' || 'Nightmare'} Mode
-        </Text>
-        <Text style={{...styles.text, textAlign: 'left'}}>
-          Multiply asset prices to see how your portfolio will perform as the
-          market changes. Only affects the main screen right now.
-        </Text>
-        {['0.5', '2', '4', '8', '10', '15', '20'].map(dream => {
-            return <Button title={`${dream}x`}
-                           key={dream}
-                           onPress={() => dreamAndLeave(dream)} />;
-        })}
-        {Number(multiple) != 1 &&
-         <Button title="reset" onPress={() => dreamAndLeave('1')} />
-        }
+    return (
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.screenPadding}>
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>
+                        {isDreamMode ? 'Dream' : 'Nightmare'} mode
+                    </Text>
+                    <Text style={styles.sectionDescription}>
+                        Multiply asset prices to see how your portfolio performs as
+                        the market changes. Only affects the main screen.
+                    </Text>
 
-        <View style={{
-            flexDirection: 'row',
-            textAlign: 'center',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-        }}>
-          <Text style={{...styles.text, marginTop: 20, marginRight: 20}}>
-            Custom
-          </Text>
-          <TextInput
-              style={{
-                  ...styles.input,
-                  width: 100,
-                  textAlign: 'center',
-              }}
-              value={multiple}
-              onChangeText={updateDreamMultiple}
-              placeholder='Custom 1, 10, 0.5'
-              placeholderTextColor='#999'
-              keyboardType="numeric"
-          />
-        </View>
+                    {multipleNum !== 1 && (
+                        <Text style={[styles.valueLarge, { marginTop: 16, marginBottom: 0 }]}>
+                            {multipleNum}
+                            <Text style={{ fontSize: 18, color: '#666', fontWeight: '500' }}>
+                                x
+                            </Text>
+                        </Text>
+                    )}
 
-      </View>
+                    <View style={styles.chipGrid}>
+                        {PRESETS.map((dream) => {
+                            const active = isActive(dream);
+                            return (
+                                <Pressable
+                                    key={dream}
+                                    onPress={() => dreamAndLeave(dream)}
+                                    style={({ pressed }) => [
+                                        styles.chip,
+                                        active && styles.chipActive,
+                                        pressed && !active && { opacity: 0.85 },
+                                    ]}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.chipText,
+                                            active && styles.chipTextActive,
+                                        ]}
+                                    >
+                                        {dream}x
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
 
-      <View style={styles.settingSection}>
-        <Text style={{...styles.text, textAlign: 'left', fontWeight: 'bold'}}>
-          About
-        </Text>
-        <Text style={{...styles.text, textAlign: 'left'}}>
-          Crypto Checker with Interest by Conrad Frame.
-        </Text>
-        <Text style={{...styles.text, textAlign: 'left'}}>
-          Email <Text selectable>conrad@devlabtech.com</Text> for support.
-        </Text>
-      </View>
-    </SafeAreaView>;
+                    {multipleNum !== 1 && (
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.buttonSecondary,
+                                { marginTop: 16 },
+                                pressed && { opacity: 0.85 },
+                            ]}
+                            onPress={() => dreamAndLeave('1')}
+                        >
+                            <Text style={styles.buttonTextSecondary}>Reset to 1x</Text>
+                        </Pressable>
+                    )}
+
+                    <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
+                        Custom multiplier
+                    </Text>
+                    <TextInput
+                        style={styles.modernInput}
+                        value={multiple}
+                        onChangeText={updateDreamMultiple}
+                        placeholder="e.g. 1, 10, 0.5"
+                        placeholderTextColor="#555"
+                        keyboardType="decimal-pad"
+                    />
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.buttonPrimary,
+                            { marginTop: 12 },
+                            pressed && { opacity: 0.85 },
+                        ]}
+                        onPress={() => navigation.navigate('Home')}
+                    >
+                        <Text style={[styles.buttonTextPrimary, { textAlign: 'center' }]}>
+                            Apply & return home
+                        </Text>
+                    </Pressable>
+                </View>
+
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>About</Text>
+                    <Text style={styles.bodyText}>
+                        Crypto Checker with Interest by Conrad Frame.
+                    </Text>
+                    <Text style={styles.bodyText}>
+                        Email{' '}
+                        <Text selectable style={styles.linkText}>
+                            conrad@devlabtech.com
+                        </Text>{' '}
+                        for support.
+                    </Text>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
 }
