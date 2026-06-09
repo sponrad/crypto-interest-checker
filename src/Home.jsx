@@ -40,12 +40,17 @@ export default function Home({ navigation }) {
             const prices = await coinDataBackend.getAssetsPrices(assets);
             setHoldings((prevHoldings) =>
                 assets.map((asset) => {
-                    const price = prices[asset.symbol];
+                    const fetchedPrice = prices[asset.symbol];
                     const prev = prevHoldings.find((h) => h.symbol === asset.symbol);
-                    asset.price =
-                        price != null
-                            ? price * theMultiple
-                            : prev?.price ?? 0;
+                    let basePrice;
+                    if (fetchedPrice != null) {
+                        basePrice = fetchedPrice;
+                    } else if (prev?.price != null) {
+                        basePrice = prev.price / (multiple || 1);
+                    } else {
+                        basePrice = 0;
+                    }
+                    asset.price = basePrice * theMultiple;
                     return asset;
                 })
             );

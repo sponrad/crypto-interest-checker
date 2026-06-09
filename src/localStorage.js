@@ -152,10 +152,14 @@ export function setLastAuthTime(seconds) {
 const dreamMultipleKey = 'dream-mode-multiple-key';
 
 export async function getDreamMultiple() {
-    const multiple = await getInsecureValueFor(dreamMultipleKey);
-    return Number(multiple);
+    const multiple = await AsyncStorage.getItem(dreamMultipleKey);
+    if (multiple == null || multiple === '') {
+        return 1;
+    }
+    const value = Number(multiple);
+    return Number.isFinite(value) ? value : 1;
 }
 
-export function setDreamMultiple(multiple) {
-    saveInsecure(dreamMultipleKey, multiple.toString());
+export async function setDreamMultiple(multiple) {
+    await saveInsecure(dreamMultipleKey, multiple.toString());
 }

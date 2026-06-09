@@ -18,9 +18,7 @@ export default function SettingsScreen({ navigation }) {
 
     useEffect(() => {
         getDreamMultiple().then((value) => {
-            if (value) {
-                setMultiple(value.toString());
-            }
+            setMultiple(value.toString());
         });
     }, []);
 
@@ -30,11 +28,15 @@ export default function SettingsScreen({ navigation }) {
 
     function updateDreamMultiple(val) {
         setMultiple(val);
-        setDreamMultiple(val);
     }
 
-    function dreamAndLeave(val) {
+    async function applyDreamMultiple(val) {
         updateDreamMultiple(val);
+        await setDreamMultiple(val);
+    }
+
+    async function dreamAndLeave(val) {
+        await applyDreamMultiple(val);
         navigation.navigate('Home');
     }
 
@@ -115,7 +117,7 @@ export default function SettingsScreen({ navigation }) {
                             { marginTop: 12 },
                             pressed && { opacity: 0.85 },
                         ]}
-                        onPress={() => navigation.navigate('Home')}
+                        onPress={() => applyDreamMultiple(multiple).then(() => navigation.navigate('Home'))}
                     >
                         <Text style={[styles.buttonTextPrimary, { textAlign: 'center' }]}>
                             Apply & return home
