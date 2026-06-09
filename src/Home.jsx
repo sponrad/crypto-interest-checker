@@ -3,12 +3,12 @@ import {
     Text,
     View,
     ActivityIndicator,
-    RefreshControl,
-    SafeAreaView,
     TouchableOpacity,
     Pressable,
     Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RefreshControl } from 'react-native-gesture-handler';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -21,35 +21,44 @@ import AssetRow from './AssetRow.jsx';
 export default function Home({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [refreshEnabled, setRefreshEnabled] = useState(true);
     const [holdings, setHoldings] = useState([]);
     const [multiple, setMultiple] = useState(1);
 
-    async function refresh() {
-        const theMultiple = (await getDreamMultiple()) || 1;
-        setMultiple(theMultiple);
-        const assets = await getAssets();
-        if (assets.length === 0) {
-            setRefreshing(false);
-            setLoading(false);
-            setHoldings([]);
-            return;
+    async function refresh({ showSpinner = false } = {}) {
+        if (showSpinner) {
+            setRefreshing(true);
         }
-        coinDataBackend.getAssetsPrices(assets).then((prices) => {
-            setHoldings(
+        try {
+            const theMultiple = (await getDreamMultiple()) || 1;
+            setMultiple(theMultiple);
+            const assets = await getAssets();
+            if (assets.length === 0) {
+                setHoldings([]);
+                return;
+            }
+            const prices = await coinDataBackend.getAssetsPrices(assets);
+            setHoldings((prevHoldings) =>
                 assets.map((asset) => {
-                    asset.price = prices[asset.symbol] * theMultiple;
+                    const price = prices[asset.symbol];
+                    const prev = prevHoldings.find((h) => h.symbol === asset.symbol);
+                    asset.price =
+                        price != null
+                            ? price * theMultiple
+                            : prev?.price ?? 0;
                     return asset;
                 })
             );
-        }).finally(() => {
+        } catch {
+            // Keep showing the last known prices if refresh fails.
+        } finally {
             setRefreshing(false);
             setLoading(false);
-        });
+        }
     }
 
     function pullRefresh() {
-        setRefreshing(true);
-        refresh();
+        refresh({ showSpinner: true });
     }
 
     useEffect(() => {
@@ -98,15 +107,31 @@ export default function Home({ navigation }) {
                     >
                         <Ionicons name="menu" size={24} color="#ddd" />
                     </Pressable>
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.iconButton,
-                            pressed && { opacity: 0.85 },
-                        ]}
-                        onPress={() => navigation.navigate('Add')}
-                    >
-                        <Ionicons name="add" size={26} color="#ddd" />
-                    </Pressable>
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.iconButton,
+                                pressed && { opacity: 0.85 },
+                            ]}
+                            onPress={pullRefresh}
+                            disabled={refreshing}
+                        >
+                            <Ionicons
+                                name="refresh"
+                                size={22}
+                                color={refreshing ? '#555' : '#ddd'}
+                            />
+                        </Pressable>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.iconButton,
+                                pressed && { opacity: 0.85 },
+                            ]}
+                            onPress={() => navigation.navigate('Add')}
+                        >
+                            <Ionicons name="add" size={26} color="#ddd" />
+                        </Pressable>
+                    </View>
                 </View>
 
                 {multiple !== 1 && (
@@ -178,9 +203,11 @@ export default function Home({ navigation }) {
                 data={holdings}
                 keyExtractor={(holding) => holding.symbol}
                 ListHeaderComponent={ListHeader}
-                contentContainerStyle={{ paddingBottom: 100 }}
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
                 ListFooterComponent={<View style={{ height: 24 }} />}
+                onDragBegin={() => setRefreshEnabled(false)}
                 onDragEnd={({ data }) => {
+                    setRefreshEnabled(true);
                     setHoldings(data);
                     getAssets().then((assets) => {
                         saveAssets(
@@ -193,6 +220,7 @@ export default function Home({ navigation }) {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
+                        enabled={refreshEnabled}
                         colors={['#22c55e']}
                         tintColor="#22c55e"
                         onRefresh={pullRefresh}

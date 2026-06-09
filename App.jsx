@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, View, Text, Image, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -77,8 +79,8 @@ export function App() {
         console.log('AppState', appState.current);
     };
 
-    if (userAuthed && appState.current === 'active') {
-        return <View style={{
+    const content = userAuthed && appState.current === 'active'
+        ? <View style={{
             flex: 1,
             backgroundColor: '#000',
         }}>
@@ -108,22 +110,22 @@ export function App() {
                             }} />
             </Stack.Navigator>
           </NavigationContainer>
-        </View>;
-    } else {
-        const style = {
-            width: 100,
-            height: 100,
-        };
-        return <View style={{
+        </View>
+        : <View style={{
             backgroundColor: '#000',
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
         }}>
-          <Image style={style} source={require('./assets/icon.png')} />
+          <Image style={{ width: 100, height: 100 }} source={require('./assets/icon.png')} />
           <Text style={{marginTop: 30, color: '#fff'}}>
             👁 Privacy 👁
           </Text>
         </View>;
-    }
+
+    return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>{content}</SafeAreaProvider>
+        </GestureHandlerRootView>
+    );
 }

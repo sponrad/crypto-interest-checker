@@ -3,7 +3,6 @@ import {
     Text,
     View,
     ActivityIndicator,
-    SafeAreaView,
     FlatList,
     TextInput,
     Pressable,
@@ -11,6 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
     Text,
     View,
-    SafeAreaView,
     TextInput,
     ScrollView,
     Pressable,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styles } from './styles.js';
 import { getAssets, saveAssets } from './localStorage.js';

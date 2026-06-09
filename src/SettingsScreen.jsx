@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
     Text,
     View,
-    SafeAreaView,
     TextInput,
     Pressable,
     ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styles } from './styles.js';
 import { getDreamMultiple, setDreamMultiple } from './localStorage.js';
