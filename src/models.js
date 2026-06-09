@@ -17,12 +17,14 @@ export class Asset {
         imageUrl=null,
         quantity=0,
         interestAccounts=[],
+        coinId=null,
     ) {
         this.name = name;
         this.symbol = symbol;
         this.imageUrl = imageUrl;
         this.quantity = Number(quantity);
         this.interestAccounts = interestAccounts;
+        this.coinId = coinId;
         this.price = 0;
     }
 
@@ -36,8 +38,8 @@ export class Asset {
 
     getImageUrl(backend) {
         if (!this.imageUrl) {
-            backend.getImageUrl(this.symbol).then(
-                url => this.imageUrl = url
+            backend.getImageUrl(this.symbol, this.coinId).then(
+                (url) => (this.imageUrl = url)
             );
         }
         return this.imageUrl;

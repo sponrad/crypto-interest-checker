@@ -75,6 +75,7 @@ export async function getAssets() {
                     );
                 }
             ),
+            json.coinId || json.c,
         );
     });
 }
@@ -85,9 +86,11 @@ export function saveAssets(assets) {
             name: asset.name,
             symbol: asset.symbol,
             imageUrl: asset.imageUrl,
+            coinId: asset.coinId,
             s: asset.symbol,
             n: asset.name,
             i: asset.imageUrl,
+            c: asset.coinId,
         };
     }));
     saveInsecure(assetsKey, jsonNonsecureToSave);
@@ -96,6 +99,8 @@ export function saveAssets(assets) {
         // abbreviating these keys to save SecureStore space
         return {
             symbol: asset.symbol,
+            coinId: asset.coinId,
+            c: asset.coinId,
             quantity: asset.quantity,
             interestAccounts: asset.interestAccounts.map(
                 ia => {

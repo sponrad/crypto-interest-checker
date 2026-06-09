@@ -40,18 +40,21 @@ export default function AddScreen({ navigation }) {
             return;
         }
         setLoading(true);
-        coinDataBackend.getTopAssets(page).then((assets) => {
-            setPage(page + 1);
-            const currentSymbols = availableAssets.map((asset) => asset.symbol);
-            const dedupedAssets = assets.filter(
-                (asset) => !currentSymbols.includes(asset.symbol)
-            );
-            setAvailableAssets(availableAssets.concat(dedupedAssets));
-            if (assets.length === 0) {
-                setLoadedAll(true);
-            }
-            setLoading(false);
-        });
+        coinDataBackend
+            .getTopAssets(page)
+            .then((assets) => {
+                setPage(page + 1);
+                const currentSymbols = availableAssets.map((asset) => asset.symbol);
+                const dedupedAssets = assets.filter(
+                    (asset) => !currentSymbols.includes(asset.symbol)
+                );
+                setAvailableAssets(availableAssets.concat(dedupedAssets));
+                if (assets.length === 0) {
+                    setLoadedAll(true);
+                }
+            })
+            .catch(() => setLoadedAll(true))
+            .finally(() => setLoading(false));
     }
 
     useEffect(loadMore, []);
