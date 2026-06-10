@@ -120,7 +120,6 @@ export const styles = StyleSheet.create({
     },
     screenPadding: {
         paddingHorizontal: 16,
-        paddingTop: 8,
         paddingBottom: 32,
     },
     listRow: {

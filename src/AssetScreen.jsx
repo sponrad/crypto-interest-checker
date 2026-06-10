@@ -8,7 +8,6 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styles } from './styles.js';
 import { getAssets, saveAssets } from './localStorage.js';
@@ -96,7 +95,7 @@ export default function AssetScreen({ route, navigation }) {
     const interestDisplay = asset.globalInterest();
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -104,7 +103,6 @@ export default function AssetScreen({ route, navigation }) {
                 <ScrollView
                     contentContainerStyle={{
                         paddingHorizontal: 16,
-                        paddingTop: 8,
                         paddingBottom: 32,
                     }}
                     keyboardShouldPersistTaps="handled"
@@ -255,6 +253,6 @@ export default function AssetScreen({ route, navigation }) {
                     </FormSection>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     );
 }

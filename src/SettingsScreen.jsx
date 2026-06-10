@@ -6,7 +6,6 @@ import {
     Pressable,
     ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styles } from './styles.js';
 import { getDreamMultiple, setDreamMultiple } from './localStorage.js';
@@ -41,7 +40,7 @@ export default function SettingsScreen({ navigation }) {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.screenPadding}>
                 <View style={styles.card}>
                     <Text style={styles.sectionTitle}>
@@ -139,6 +138,6 @@ export default function SettingsScreen({ navigation }) {
                     </Text>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

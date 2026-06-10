@@ -10,7 +10,6 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { styles } from './styles.js';
@@ -113,7 +112,7 @@ export default function AddScreen({ navigation }) {
 
     if (selectedAsset) {
         return (
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -180,13 +179,13 @@ export default function AddScreen({ navigation }) {
                         </FormSection>
                     </ScrollView>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
+        <View style={styles.container}>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
                 <Text style={styles.fieldLabel}>Search assets</Text>
                 <TextInput
                     onChangeText={onChangeText}
@@ -232,6 +231,6 @@ export default function AddScreen({ navigation }) {
                     ) : null
                 }
             />
-        </SafeAreaView>
+        </View>
     );
 }
