@@ -212,6 +212,9 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 12,
     },
+    homeScreenPadding: {
+        paddingHorizontal: 8,
+    },
     iconButton: {
         width: 44,
         height: 44,

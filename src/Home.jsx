@@ -184,10 +184,10 @@ export default function Home({ navigation }) {
     function ListHeader() {
         return (
             <View
-                style={{
-                    paddingHorizontal: 16,
-                    paddingTop: Platform.OS === 'android' ? 8 : 0,
-                }}
+                style={[
+                    styles.homeScreenPadding,
+                    { paddingTop: Platform.OS === 'android' ? 8 : 0 },
+                ]}
             >
                 {isWeb && (refreshing || webPullDistance > 12) && (
                     <View
@@ -346,7 +346,7 @@ export default function Home({ navigation }) {
                     }
                     return (
                         <ScaleDecorator>
-                            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                            <View style={[styles.homeScreenPadding, { marginBottom: 8 }]}>
                                 <TouchableOpacity
                                     onLongPress={drag}
                                     disabled={isActive}
