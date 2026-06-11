@@ -124,8 +124,8 @@ export function App() {
         </View>;
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaProvider>{content}</SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
+            <SafeAreaProvider style={{ flex: 1, backgroundColor: '#000' }}>{content}</SafeAreaProvider>
         </GestureHandlerRootView>
     );
 }

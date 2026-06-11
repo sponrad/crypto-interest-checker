@@ -30,7 +30,17 @@
       "permissions": []
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#000000",
+      "themeColor": "#000000",
+      "barStyle": "black-translucent",
+      "display": "standalone",
+      "orientation": "portrait",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000"
+      }
     },
     "plugins": [
       [
