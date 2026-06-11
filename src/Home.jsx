@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Text,
     View,
@@ -18,12 +18,19 @@ import { formatCurrency } from './util.js';
 import { getAssets, saveAssets, getDreamMultiple } from './localStorage.js';
 import AssetRow from './AssetRow.jsx';
 
+const WEB_PULL_THRESHOLD = 72;
+const isWeb = Platform.OS === 'web';
+
 export default function Home({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [refreshEnabled, setRefreshEnabled] = useState(true);
     const [holdings, setHoldings] = useState([]);
     const [multiple, setMultiple] = useState(1);
+    const [webPullDistance, setWebPullDistance] = useState(0);
+    const webPullDistanceRef = useRef(0);
+    const webTouchStartY = useRef(null);
+    const scrollOffsetY = useRef(0);
 
     async function refresh({ showSpinner = false } = {}) {
         if (showSpinner) {
@@ -66,6 +73,54 @@ export default function Home({ navigation }) {
         refresh({ showSpinner: true });
     }
 
+    const webPullHandlers = isWeb
+        ? {
+              onScroll: (event) => {
+                  scrollOffsetY.current = event.nativeEvent.contentOffset.y;
+              },
+              scrollEventThrottle: 16,
+              onTouchStart: (event) => {
+                  if (!refreshEnabled || refreshing) {
+                      return;
+                  }
+                  webTouchStartY.current = event.nativeEvent.touches[0].pageY;
+              },
+              onTouchMove: (event) => {
+                  if (
+                      !refreshEnabled ||
+                      refreshing ||
+                      webTouchStartY.current == null ||
+                      scrollOffsetY.current > 5
+                  ) {
+                      return;
+                  }
+                  const delta =
+                      event.nativeEvent.touches[0].pageY - webTouchStartY.current;
+                  if (delta > 0) {
+                      const distance = Math.min(delta, 100);
+                      webPullDistanceRef.current = distance;
+                      setWebPullDistance(distance);
+                  }
+              },
+              onTouchEnd: () => {
+                  if (
+                      webPullDistanceRef.current >= WEB_PULL_THRESHOLD &&
+                      !refreshing
+                  ) {
+                      pullRefresh();
+                  }
+                  webTouchStartY.current = null;
+                  webPullDistanceRef.current = 0;
+                  setWebPullDistance(0);
+              },
+              onTouchCancel: () => {
+                  webTouchStartY.current = null;
+                  webPullDistanceRef.current = 0;
+                  setWebPullDistance(0);
+              },
+          }
+        : {};
+
     useEffect(() => {
         refresh();
     }, []);
@@ -102,6 +157,20 @@ export default function Home({ navigation }) {
                     paddingTop: Platform.OS === 'android' ? 8 : 0,
                 }}
             >
+                {isWeb && (refreshing || webPullDistance > 12) && (
+                    <View
+                        style={{
+                            alignItems: 'center',
+                            paddingBottom: 8,
+                            opacity: refreshing
+                                ? 1
+                                : Math.min(webPullDistance / WEB_PULL_THRESHOLD, 1),
+                        }}
+                    >
+                        <ActivityIndicator color="#22c55e" size="small" />
+                    </View>
+                )}
+
                 <View style={styles.homeToolbar}>
                     <Pressable
                         style={({ pressed }) => [
@@ -210,6 +279,7 @@ export default function Home({ navigation }) {
                 ListHeaderComponent={ListHeader}
                 contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
                 ListFooterComponent={<View style={{ height: 24 }} />}
+                {...webPullHandlers}
                 onDragBegin={() => setRefreshEnabled(false)}
                 onDragEnd={({ data }) => {
                     setRefreshEnabled(true);
@@ -223,13 +293,15 @@ export default function Home({ navigation }) {
                     });
                 }}
                 refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        enabled={refreshEnabled}
-                        colors={['#22c55e']}
-                        tintColor="#22c55e"
-                        onRefresh={pullRefresh}
-                    />
+                    isWeb ? undefined : (
+                        <RefreshControl
+                            refreshing={refreshing}
+                            enabled={refreshEnabled}
+                            colors={['#22c55e']}
+                            tintColor="#22c55e"
+                            onRefresh={pullRefresh}
+                        />
+                    )
                 }
                 renderItem={({ item, drag, isActive }) => {
                     const holding = item;
