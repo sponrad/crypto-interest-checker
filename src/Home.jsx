@@ -31,6 +31,7 @@ export default function Home({ navigation }) {
     const webPullDistanceRef = useRef(0);
     const webTouchStartY = useRef(null);
     const scrollOffsetY = useRef(0);
+    const refreshIdRef = useRef(0);
 
     function applyDreamPrices(assets, theMultiple) {
         return assets.map((asset) => {
@@ -42,13 +43,20 @@ export default function Home({ navigation }) {
     }
 
     async function refresh({ showSpinner = false, fetchPrices = true } = {}) {
+        const refreshId = ++refreshIdRef.current;
         if (showSpinner) {
             setRefreshing(true);
         }
         try {
             const theMultiple = (await getDreamMultiple()) || 1;
+            if (refreshId !== refreshIdRef.current) {
+                return;
+            }
             setMultiple(theMultiple);
             const assets = await getAssets();
+            if (refreshId !== refreshIdRef.current) {
+                return;
+            }
             if (assets.length === 0) {
                 setHoldings([]);
                 return;
@@ -57,25 +65,39 @@ export default function Home({ navigation }) {
             setHoldings(applyDreamPrices(assets, theMultiple));
             setLoading(false);
 
-            const hasCachedPrices = assets.some((asset) => asset.lastBasePrice > 0);
-            if (!fetchPrices && hasCachedPrices) {
+            const needsPrices =
+                fetchPrices || assets.some((asset) => !asset.lastBasePrice);
+            if (!needsPrices) {
                 return;
             }
 
             const prices = await coinDataBackend.getAssetsPrices(assets);
-            assets.forEach((asset) => {
+            if (refreshId !== refreshIdRef.current) {
+                return;
+            }
+
+            const latestAssets = await getAssets();
+            if (refreshId !== refreshIdRef.current) {
+                return;
+            }
+            latestAssets.forEach((asset) => {
                 const fetchedPrice = prices[asset.symbol];
                 if (fetchedPrice != null) {
                     asset.lastBasePrice = fetchedPrice;
                 }
             });
-            await saveAssets(assets);
-            setHoldings(applyDreamPrices(assets, theMultiple));
+            await saveAssets(latestAssets);
+            if (refreshId !== refreshIdRef.current) {
+                return;
+            }
+            setHoldings(applyDreamPrices(latestAssets, theMultiple));
         } catch {
             // Keep showing cached portfolio if price refresh fails.
         } finally {
-            setRefreshing(false);
-            setLoading(false);
+            if (refreshId === refreshIdRef.current) {
+                setRefreshing(false);
+                setLoading(false);
+            }
         }
     }
 
@@ -294,7 +316,7 @@ export default function Home({ navigation }) {
                 onDragEnd={({ data }) => {
                     setRefreshEnabled(true);
                     setHoldings(data);
-                    getAssets().then((assets) => {
+                    getAssets().then(async (assets) => {
                         const bySymbol = Object.fromEntries(
                             assets.map((asset) => [asset.symbol, asset])
                         );
@@ -302,7 +324,7 @@ export default function Home({ navigation }) {
                             .map((holding) => bySymbol[holding.symbol])
                             .filter(Boolean);
                         if (reordered.length === data.length) {
-                            saveAssets(reordered);
+                            await saveAssets(reordered);
                         }
                     });
                 }}

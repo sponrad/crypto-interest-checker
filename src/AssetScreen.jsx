@@ -58,14 +58,14 @@ export default function AssetScreen({ route, navigation }) {
         assets[index].setInterestRate(
             Number(interestRate) || assets[index].globalInterest()
         );
-        saveAssets(assets);
+        await saveAssets(assets);
         setAsset(assets[index]);
         setEditQuantity(false);
     }
 
     async function onRemove() {
         const assets = await getAssets();
-        saveAssets(assets.filter((a) => a.symbol !== symbol));
+        await saveAssets(assets.filter((a) => a.symbol !== symbol));
         navigation.pop();
     }
 
@@ -73,7 +73,7 @@ export default function AssetScreen({ route, navigation }) {
         const assets = await getAssets();
         const index = assets.findIndex((a) => a.symbol === symbol);
         assets[index].setInterestRate(Number(interestRate));
-        saveAssets(assets);
+        await saveAssets(assets);
         setAsset((prevAsset) => {
             const assetCopy = prevAsset;
             assetCopy.setInterestRate(Number(interestRate));

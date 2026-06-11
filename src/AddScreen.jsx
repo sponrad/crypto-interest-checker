@@ -86,10 +86,10 @@ export default function AddScreen({ navigation }) {
                 (asset) => asset.symbol === selectedAsset.symbol
             );
             assets[index].quantity += Number(quantity);
-            saveAssets(assets);
+            await saveAssets(assets);
         } else {
             selectedAsset.quantity = Number(quantity);
-            saveAssets(assets.concat([selectedAsset]));
+            await saveAssets(assets.concat([selectedAsset]));
         }
         navigation.navigate('Home');
     }

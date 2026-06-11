@@ -3,12 +3,18 @@ import { Asset } from './models.js';
 // https://docs.coingecko.com/reference/introduction
 const BASE_URL = 'https://api.coingecko.com/api/v3';
 
-async function fetchJson(url) {
-    const res = await fetch(url);
-    if (!res.ok) {
-        throw new Error(`CoinGecko API error: ${res.status}`);
+async function fetchJson(url, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) {
+            throw new Error(`CoinGecko API error: ${res.status}`);
+        }
+        return res.json();
+    } finally {
+        clearTimeout(timeout);
     }
-    return res.json();
 }
 
 const coinGeckoBackend = {
