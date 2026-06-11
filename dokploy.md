@@ -40,7 +40,9 @@ Click **Deploy**. First build takes a few minutes (npm install + expo export). W
 
 ### 5. iPhone home screen
 
-Safari → share → **Add to Home Screen**. Data persists in that browser’s localStorage.
+Safari → share → **Add to Home Screen**. Data persists in that browser’s localStorage for `crypto.devlabtech.com`.
+
+**Important:** On iPhone, Safari and the Home Screen shortcut use **separate storage** — they are not the same app bucket. Pick one and stick with it, or use **Settings → Export/Import** to copy your portfolio between them. Redeploying the site does not wipe storage.
 
 ### Alternative: Static build type (no Dockerfile)
 

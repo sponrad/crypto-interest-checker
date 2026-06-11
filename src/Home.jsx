@@ -32,7 +32,16 @@ export default function Home({ navigation }) {
     const webTouchStartY = useRef(null);
     const scrollOffsetY = useRef(0);
 
-    async function refresh({ showSpinner = false } = {}) {
+    function applyDreamPrices(assets, theMultiple) {
+        return assets.map((asset) => {
+            const copy = asset;
+            const basePrice = copy.lastBasePrice || 0;
+            copy.price = basePrice * theMultiple;
+            return copy;
+        });
+    }
+
+    async function refresh({ showSpinner = false, fetchPrices = true } = {}) {
         if (showSpinner) {
             setRefreshing(true);
         }
@@ -44,25 +53,26 @@ export default function Home({ navigation }) {
                 setHoldings([]);
                 return;
             }
+
+            setHoldings(applyDreamPrices(assets, theMultiple));
+            setLoading(false);
+
+            const hasCachedPrices = assets.some((asset) => asset.lastBasePrice > 0);
+            if (!fetchPrices && hasCachedPrices) {
+                return;
+            }
+
             const prices = await coinDataBackend.getAssetsPrices(assets);
-            setHoldings((prevHoldings) =>
-                assets.map((asset) => {
-                    const fetchedPrice = prices[asset.symbol];
-                    const prev = prevHoldings.find((h) => h.symbol === asset.symbol);
-                    let basePrice;
-                    if (fetchedPrice != null) {
-                        basePrice = fetchedPrice;
-                    } else if (prev?.price != null) {
-                        basePrice = prev.price / (multiple || 1);
-                    } else {
-                        basePrice = 0;
-                    }
-                    asset.price = basePrice * theMultiple;
-                    return asset;
-                })
-            );
+            assets.forEach((asset) => {
+                const fetchedPrice = prices[asset.symbol];
+                if (fetchedPrice != null) {
+                    asset.lastBasePrice = fetchedPrice;
+                }
+            });
+            await saveAssets(assets);
+            setHoldings(applyDreamPrices(assets, theMultiple));
         } catch {
-            // Keep showing the last known prices if refresh fails.
+            // Keep showing cached portfolio if price refresh fails.
         } finally {
             setRefreshing(false);
             setLoading(false);
@@ -70,7 +80,7 @@ export default function Home({ navigation }) {
     }
 
     function pullRefresh() {
-        refresh({ showSpinner: true });
+        refresh({ showSpinner: true, fetchPrices: true });
     }
 
     const webPullHandlers = isWeb
@@ -122,12 +132,12 @@ export default function Home({ navigation }) {
         : {};
 
     useEffect(() => {
-        refresh();
+        refresh({ fetchPrices: true });
     }, []);
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
-            refresh();
+            refresh({ fetchPrices: false });
         });
         return unsubscribe;
     }, [navigation]);
@@ -285,11 +295,15 @@ export default function Home({ navigation }) {
                     setRefreshEnabled(true);
                     setHoldings(data);
                     getAssets().then((assets) => {
-                        saveAssets(
-                            data.map((holding) =>
-                                assets.find((asset) => asset.symbol === holding.symbol)
-                            )
+                        const bySymbol = Object.fromEntries(
+                            assets.map((asset) => [asset.symbol, asset])
                         );
+                        const reordered = data
+                            .map((holding) => bySymbol[holding.symbol])
+                            .filter(Boolean);
+                        if (reordered.length === data.length) {
+                            saveAssets(reordered);
+                        }
                     });
                 }}
                 refreshControl={

@@ -26,6 +26,7 @@ export class Asset {
         this.interestAccounts = interestAccounts;
         this.coinId = coinId;
         this.price = 0;
+        this.lastBasePrice = 0;
     }
 
     getPrice(backend) {

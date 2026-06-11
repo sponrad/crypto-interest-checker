@@ -5,15 +5,35 @@ import {
     TextInput,
     Pressable,
     ScrollView,
+    Platform,
 } from 'react-native';
 
 import { styles } from './styles.js';
-import { getDreamMultiple, setDreamMultiple } from './localStorage.js';
+import {
+    getDreamMultiple,
+    setDreamMultiple,
+    exportPortfolioJson,
+    importPortfolioJson,
+} from './localStorage.js';
 
 const PRESETS = ['0.5', '2', '4', '8', '10', '15', '20'];
+const isWeb = Platform.OS === 'web';
+
+function isStandaloneWebApp() {
+    if (!isWeb || typeof window === 'undefined') {
+        return false;
+    }
+    return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true
+    );
+}
 
 export default function SettingsScreen({ navigation }) {
     const [multiple, setMultiple] = useState('1');
+    const [backupMessage, setBackupMessage] = useState('');
+    const [importText, setImportText] = useState('');
+    const [showImport, setShowImport] = useState(false);
 
     useEffect(() => {
         getDreamMultiple().then((value) => {
@@ -37,6 +57,47 @@ export default function SettingsScreen({ navigation }) {
     async function dreamAndLeave(val) {
         await applyDreamMultiple(val);
         navigation.navigate('Home');
+    }
+
+    async function copyBackup() {
+        try {
+            const json = await exportPortfolioJson();
+            if (isWeb && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(json);
+                setBackupMessage('Portfolio copied to clipboard.');
+            } else {
+                setImportText(json);
+                setShowImport(true);
+                setBackupMessage('Copy the backup text below.');
+            }
+        } catch {
+            setBackupMessage('Could not export portfolio.');
+        }
+    }
+
+    async function pasteFromClipboard() {
+        if (!isWeb || !navigator.clipboard?.readText) {
+            return;
+        }
+        try {
+            const text = await navigator.clipboard.readText();
+            setImportText(text);
+            setShowImport(true);
+            setBackupMessage('Pasted from clipboard.');
+        } catch {
+            setBackupMessage('Could not read clipboard.');
+        }
+    }
+
+    async function restoreBackup() {
+        try {
+            const count = await importPortfolioJson(importText);
+            setBackupMessage(`Restored ${count} assets.`);
+            setImportText('');
+            setShowImport(false);
+        } catch {
+            setBackupMessage('Invalid backup — check the JSON and try again.');
+        }
     }
 
     return (
@@ -123,6 +184,92 @@ export default function SettingsScreen({ navigation }) {
                         </Text>
                     </Pressable>
                 </View>
+
+                {isWeb && (
+                    <View style={styles.card}>
+                        <Text style={styles.sectionTitle}>Backup & sync</Text>
+                        <Text style={styles.sectionDescription}>
+                          Export from one and import into the other to copy your
+                          portfolio.
+                        </Text>
+                        {isStandaloneWebApp() && (
+                            <Text style={[styles.bodyText, { marginTop: 8 }]}>
+                                You are using the Home Screen app.
+                            </Text>
+                        )}
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.buttonSecondary,
+                                { marginTop: 16 },
+                                pressed && { opacity: 0.85 },
+                            ]}
+                            onPress={copyBackup}
+                        >
+                            <Text style={styles.buttonTextSecondary}>
+                                Export portfolio
+                            </Text>
+                        </Pressable>
+                        {isWeb &&
+                            typeof navigator !== 'undefined' &&
+                            navigator.clipboard?.readText && (
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.buttonSecondary,
+                                    { marginTop: 10 },
+                                    pressed && { opacity: 0.85 },
+                                ]}
+                                onPress={pasteFromClipboard}
+                            >
+                                <Text style={styles.buttonTextSecondary}>
+                                    Paste from clipboard
+                                </Text>
+                            </Pressable>
+                        )}
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.buttonGhost,
+                                { marginTop: 10 },
+                                pressed && { opacity: 0.7 },
+                            ]}
+                            onPress={() => setShowImport((value) => !value)}
+                        >
+                            <Text style={styles.buttonTextGhost}>
+                                {showImport ? 'Hide import' : 'Import portfolio'}
+                            </Text>
+                        </Pressable>
+                        {showImport && (
+                            <>
+                                <TextInput
+                                    style={[styles.modernInput, { marginTop: 12, minHeight: 120 }]}
+                                    value={importText}
+                                    onChangeText={setImportText}
+                                    placeholder="Paste backup JSON here"
+                                    placeholderTextColor="#555"
+                                    multiline
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                />
+                                <Pressable
+                                    style={({ pressed }) => [
+                                        styles.buttonPrimary,
+                                        { marginTop: 12 },
+                                        pressed && { opacity: 0.85 },
+                                    ]}
+                                    onPress={restoreBackup}
+                                >
+                                    <Text style={[styles.buttonTextPrimary, { textAlign: 'center' }]}>
+                                        Restore backup
+                                    </Text>
+                                </Pressable>
+                            </>
+                        )}
+                        {backupMessage ? (
+                            <Text style={[styles.bodyText, { marginTop: 12 }]}>
+                                {backupMessage}
+                            </Text>
+                        ) : null}
+                    </View>
+                )}
 
                 <View style={styles.card}>
                     <Text style={styles.sectionTitle}>About</Text>
