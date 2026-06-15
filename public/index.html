@@ -34,6 +34,11 @@
         flex: 1;
         background-color: #000000;
       }
+
+      /* Hide portfolio synchronously when locked — must not wait for React */
+      html.privacy-locked #root {
+        visibility: hidden !important;
+      }
     </style>
   </head>
 
@@ -42,5 +47,99 @@
       You need to enable JavaScript to run this app.
     </noscript>
     <div id="root"></div>
+    <div
+      id="web-privacy-overlay"
+      style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:999999;background:#000;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-family:system-ui,sans-serif;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;"
+    >
+      <p style="margin:0;font-size:48px;line-height:1;">👁</p>
+      <p style="margin:1rem 0 0;font-size:24px;">Privacy</p>
+      <p style="margin:1.25rem 0 0;font-size:14px;color:#888;">Tap to view portfolio</p>
+    </div>
+    <script>
+      (function () {
+        var OVERLAY_ID = 'web-privacy-overlay';
+        var ROOT_ID = 'root';
+        var LOCK_CLASS = 'privacy-locked';
+        var isTouch =
+          'ontouchstart' in window ||
+          (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+
+        var unlockGraceUntil = 0;
+        var UNLOCK_GRACE_MS = 500;
+
+        function lockNow() {
+          if (Date.now() < unlockGraceUntil) {
+            return;
+          }
+          window.__webPrivacyIsLocked = true;
+          document.documentElement.classList.add(LOCK_CLASS);
+          var overlay = document.getElementById(OVERLAY_ID);
+          var root = document.getElementById(ROOT_ID);
+          if (overlay) {
+            overlay.style.display = 'flex';
+            overlay.style.pointerEvents = 'auto';
+          }
+          if (root) {
+            root.setAttribute('aria-hidden', 'true');
+          }
+          window.dispatchEvent(new Event('webprivacy-lock'));
+        }
+
+        function unlockNow() {
+          unlockGraceUntil = Date.now() + UNLOCK_GRACE_MS;
+          window.__webPrivacyUnlockGraceUntil = unlockGraceUntil;
+          window.__webPrivacyIsLocked = false;
+          document.documentElement.classList.remove(LOCK_CLASS);
+          var overlay = document.getElementById(OVERLAY_ID);
+          var root = document.getElementById(ROOT_ID);
+          if (overlay) {
+            overlay.style.display = 'none';
+            overlay.style.pointerEvents = 'none';
+          }
+          if (root) {
+            root.removeAttribute('aria-hidden');
+          }
+          window.dispatchEvent(new Event('webprivacy-unlock'));
+        }
+
+        window.__webPrivacyLock = lockNow;
+        window.__webPrivacyUnlock = unlockNow;
+        window.__webPrivacyIsLocked = false;
+        window.__webPrivacyUnlockGraceUntil = 0;
+        window.__webPrivacyIsTouch = isTouch;
+
+        var overlay = document.getElementById(OVERLAY_ID);
+        if (overlay) {
+          if (isTouch) {
+            overlay.addEventListener('touchend', function (e) {
+              if (!window.__webPrivacyIsLocked) {
+                return;
+              }
+              unlockNow();
+            }, { passive: true });
+          } else {
+            overlay.addEventListener('click', unlockNow);
+          }
+        }
+
+        document.addEventListener(
+          'visibilitychange',
+          function () {
+            if (document.hidden || document.visibilityState === 'hidden') {
+              lockNow();
+            }
+          },
+          true
+        );
+        window.addEventListener('pagehide', lockNow, true);
+        document.addEventListener('freeze', lockNow, true);
+        document.addEventListener('touchcancel', lockNow, true);
+
+        /* Mobile: start locked so the last painted frame is privacy, not holdings */
+        if (isTouch) {
+          lockNow();
+        }
+      })();
+    </script>
   </body>
 </html>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, View, Text, Image, Platform } from 'react-native';
+import { AppState, View, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -10,6 +10,8 @@ import Home from './src/Home.jsx';
 import AddScreen from './src/AddScreen.jsx';
 import AssetScreen from './src/AssetScreen.jsx';
 import SettingsScreen from './src/SettingsScreen.jsx';
+import PrivacySplash from './src/PrivacySplash.jsx';
+import WebTabPrivacyGuard from './src/WebTabPrivacyGuard.jsx';
 import { getLastAuthTime, setLastAuthTime } from './src/localStorage.js';
 
 const IS_DEBUG = false;
@@ -112,21 +114,13 @@ export function App() {
             </Stack.Navigator>
           </NavigationContainer>
         </View>
-        : <View style={{
-            backgroundColor: '#000',
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-        }}>
-          <Image style={{ width: 100, height: 100 }} source={require('./assets/icon.png')} />
-          <Text style={{marginTop: 30, color: '#fff'}}>
-            👁 Privacy 👁
-          </Text>
-        </View>;
+        : <PrivacySplash />;
 
     return (
         <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
-            <SafeAreaProvider style={{ flex: 1, backgroundColor: '#000' }}>{content}</SafeAreaProvider>
+            <SafeAreaProvider style={{ flex: 1, backgroundColor: '#000' }}>
+                <WebTabPrivacyGuard>{content}</WebTabPrivacyGuard>
+            </SafeAreaProvider>
         </GestureHandlerRootView>
     );
 }
