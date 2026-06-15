@@ -88,6 +88,7 @@ export function App() {
             <Stack.Navigator screenOptions={{
                 headerShown: false,
                 headerStyle: { backgroundColor: 'black' },
+                contentStyle: { flex: 1, backgroundColor: '#000' },
             }}>
               <Stack.Screen name="Home" component={Home} />
               <Stack.Screen name="Add"

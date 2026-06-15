@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     Pressable,
     Platform,
+    FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RefreshControl } from 'react-native-gesture-handler';
@@ -29,7 +30,6 @@ export default function Home({ navigation }) {
     const [multiple, setMultiple] = useState(1);
     const [webPullDistance, setWebPullDistance] = useState(0);
     const webPullDistanceRef = useRef(0);
-    const webTouchStartY = useRef(null);
     const scrollOffsetY = useRef(0);
     const refreshIdRef = useRef(0);
 
@@ -105,53 +105,97 @@ export default function Home({ navigation }) {
         refresh({ showSpinner: true, fetchPrices: true });
     }
 
-    const webPullHandlers = isWeb
-        ? {
-              onScroll: (event) => {
-                  scrollOffsetY.current = event.nativeEvent.contentOffset.y;
-              },
-              scrollEventThrottle: 16,
-              onTouchStart: (event) => {
-                  if (!refreshEnabled || refreshing) {
-                      return;
-                  }
-                  webTouchStartY.current = event.nativeEvent.touches[0].pageY;
-              },
-              onTouchMove: (event) => {
-                  if (
-                      !refreshEnabled ||
-                      refreshing ||
-                      webTouchStartY.current == null ||
-                      scrollOffsetY.current > 5
-                  ) {
-                      return;
-                  }
-                  const delta =
-                      event.nativeEvent.touches[0].pageY - webTouchStartY.current;
-                  if (delta > 0) {
-                      const distance = Math.min(delta, 100);
-                      webPullDistanceRef.current = distance;
-                      setWebPullDistance(distance);
-                  }
-              },
-              onTouchEnd: () => {
-                  if (
-                      webPullDistanceRef.current >= WEB_PULL_THRESHOLD &&
-                      !refreshing
-                  ) {
-                      pullRefresh();
-                  }
-                  webTouchStartY.current = null;
-                  webPullDistanceRef.current = 0;
-                  setWebPullDistance(0);
-              },
-              onTouchCancel: () => {
-                  webTouchStartY.current = null;
-                  webPullDistanceRef.current = 0;
-                  setWebPullDistance(0);
-              },
-          }
-        : {};
+    const listRef = useRef(null);
+
+    useEffect(() => {
+        if (!isWeb) {
+            return undefined;
+        }
+
+        let removed = false;
+        let domCleanup = () => {};
+        const timer = setTimeout(() => {
+            if (removed) {
+                return;
+            }
+
+            const scrollRef = listRef.current?.getNativeScrollRef?.();
+            const scrollEl =
+                listRef.current?.getScrollableNode?.() ||
+                scrollRef?.getScrollableNode?.() ||
+                scrollRef?._scrollRef ||
+                scrollRef;
+
+            if (!scrollEl?.addEventListener) {
+                return;
+            }
+
+            let startY = 0;
+            let tracking = false;
+
+            const onTouchStart = (event) => {
+                if (!refreshEnabled || refreshing || scrollOffsetY.current > 5) {
+                    tracking = false;
+                    return;
+                }
+                startY = event.touches[0].clientY;
+                tracking = true;
+            };
+
+            const onTouchMove = (event) => {
+                if (!tracking) {
+                    return;
+                }
+                if (scrollOffsetY.current > 5) {
+                    tracking = false;
+                    webPullDistanceRef.current = 0;
+                    setWebPullDistance(0);
+                    return;
+                }
+                const delta = event.touches[0].clientY - startY;
+                if (delta > 0) {
+                    const distance = Math.min(delta, 100);
+                    webPullDistanceRef.current = distance;
+                    setWebPullDistance(distance);
+                } else {
+                    tracking = false;
+                    webPullDistanceRef.current = 0;
+                    setWebPullDistance(0);
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (
+                    tracking &&
+                    webPullDistanceRef.current >= WEB_PULL_THRESHOLD &&
+                    !refreshing
+                ) {
+                    pullRefresh();
+                }
+                tracking = false;
+                webPullDistanceRef.current = 0;
+                setWebPullDistance(0);
+            };
+
+            scrollEl.addEventListener('touchstart', onTouchStart, { passive: true });
+            scrollEl.addEventListener('touchmove', onTouchMove, { passive: true });
+            scrollEl.addEventListener('touchend', onTouchEnd, { passive: true });
+            scrollEl.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+            domCleanup = () => {
+                scrollEl.removeEventListener('touchstart', onTouchStart);
+                scrollEl.removeEventListener('touchmove', onTouchMove);
+                scrollEl.removeEventListener('touchend', onTouchEnd);
+                scrollEl.removeEventListener('touchcancel', onTouchEnd);
+            };
+        }, 100);
+
+        return () => {
+            removed = true;
+            clearTimeout(timer);
+            domCleanup();
+        };
+    }, [refreshEnabled, refreshing]);
 
     useEffect(() => {
         refresh({ fetchPrices: true });
@@ -303,15 +347,59 @@ export default function Home({ navigation }) {
         );
     }
 
+    function renderHoldingItem(holding, { drag, isActive } = {}) {
+        if (!holding) {
+            return null;
+        }
+        return (
+            <View style={[styles.homeScreenPadding, { marginBottom: 8 }]}>
+                <TouchableOpacity
+                    onLongPress={drag}
+                    disabled={isActive}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                        navigation.navigate('Asset', {
+                            symbol: holding.symbol,
+                            price: holding.price,
+                        });
+                    }}
+                >
+                    <AssetRow asset={holding} isActive={isActive} />
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    const listHeader = <ListHeader />;
+    const listProps = {
+        ref: listRef,
+        style: { flex: 1 },
+        data: holdings,
+        keyExtractor: (holding) => holding.symbol,
+        ListHeaderComponent: listHeader,
+        contentContainerStyle: { paddingBottom: 100 },
+        ListFooterComponent: <View style={{ height: 24 }} />,
+        onScroll: (event) => {
+            scrollOffsetY.current = event.nativeEvent.contentOffset.y;
+        },
+        scrollEventThrottle: 16,
+    };
+
+    if (isWeb) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <FlatList
+                    {...listProps}
+                    renderItem={({ item }) => renderHoldingItem(item)}
+                />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <DraggableFlatList
-                data={holdings}
-                keyExtractor={(holding) => holding.symbol}
-                ListHeaderComponent={ListHeader}
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
-                ListFooterComponent={<View style={{ height: 24 }} />}
-                {...webPullHandlers}
+                {...listProps}
                 onDragBegin={() => setRefreshEnabled(false)}
                 onDragEnd={({ data }) => {
                     setRefreshEnabled(true);
@@ -329,41 +417,19 @@ export default function Home({ navigation }) {
                     });
                 }}
                 refreshControl={
-                    isWeb ? undefined : (
-                        <RefreshControl
-                            refreshing={refreshing}
-                            enabled={refreshEnabled}
-                            colors={['#22c55e']}
-                            tintColor="#22c55e"
-                            onRefresh={pullRefresh}
-                        />
-                    )
+                    <RefreshControl
+                        refreshing={refreshing}
+                        enabled={refreshEnabled}
+                        colors={['#22c55e']}
+                        tintColor="#22c55e"
+                        onRefresh={pullRefresh}
+                    />
                 }
-                renderItem={({ item, drag, isActive }) => {
-                    const holding = item;
-                    if (!holding) {
-                        return null;
-                    }
-                    return (
-                        <ScaleDecorator>
-                            <View style={[styles.homeScreenPadding, { marginBottom: 8 }]}>
-                                <TouchableOpacity
-                                    onLongPress={drag}
-                                    disabled={isActive}
-                                    activeOpacity={0.85}
-                                    onPress={() => {
-                                        navigation.navigate('Asset', {
-                                            symbol: holding.symbol,
-                                            price: holding.price,
-                                        });
-                                    }}
-                                >
-                                    <AssetRow asset={holding} isActive={isActive} />
-                                </TouchableOpacity>
-                            </View>
-                        </ScaleDecorator>
-                    );
-                }}
+                renderItem={({ item, drag, isActive }) => (
+                    <ScaleDecorator>
+                        {renderHoldingItem(item, { drag, isActive })}
+                    </ScaleDecorator>
+                )}
             />
         </SafeAreaView>
     );
