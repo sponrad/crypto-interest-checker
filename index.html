@@ -41,6 +41,40 @@
       html.privacy-locked #root {
         visibility: hidden !important;
       }
+
+      html.privacy-unlock-grace #root {
+        pointer-events: none !important;
+      }
+
+      .privacy-splash {
+        background-color: #000;
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .privacy-splash-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: 22px;
+      }
+
+      .privacy-splash-title {
+        margin: 30px 0 0;
+        color: #fff;
+        font-size: 18px;
+      }
+
+      .privacy-splash-hint {
+        margin: 20px 0 0;
+        color: #888;
+        font-size: 14px;
+      }
     </style>
   </head>
 
@@ -49,11 +83,13 @@
     <div id="root"></div>
     <div
       id="web-privacy-overlay"
-      style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:999999;background:#000;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-family:system-ui,sans-serif;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;"
+      style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:999999;background:#000;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-family:system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;"
     >
-      <p style="margin:0;font-size:48px;line-height:1;">👁</p>
-      <p style="margin:1rem 0 0;font-size:24px;">Privacy</p>
-      <p style="margin:1.25rem 0 0;font-size:14px;color:#888;">Tap to view portfolio</p>
+      <div class="privacy-splash">
+        <img class="privacy-splash-icon" src="/icon.png" alt="" />
+        <p class="privacy-splash-title">👁 Privacy 👁</p>
+        <p class="privacy-splash-hint">Tap to view portfolio</p>
+      </div>
     </div>
     <script>
       (function () {
@@ -65,12 +101,31 @@
           (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
 
         var unlockGraceUntil = 0;
-        var UNLOCK_GRACE_MS = 500;
+        var UNLOCK_GRACE_MS = 600;
+        var unlockGraceTimer = null;
+
+        function beginUnlockGrace() {
+          unlockGraceUntil = Date.now() + UNLOCK_GRACE_MS;
+          window.__webPrivacyUnlockGraceUntil = unlockGraceUntil;
+          document.documentElement.classList.add('privacy-unlock-grace');
+          if (unlockGraceTimer) {
+            clearTimeout(unlockGraceTimer);
+          }
+          unlockGraceTimer = setTimeout(function () {
+            document.documentElement.classList.remove('privacy-unlock-grace');
+            unlockGraceTimer = null;
+          }, UNLOCK_GRACE_MS);
+        }
 
         function lockNow() {
           if (Date.now() < unlockGraceUntil) {
             return;
           }
+          if (unlockGraceTimer) {
+            clearTimeout(unlockGraceTimer);
+            unlockGraceTimer = null;
+          }
+          document.documentElement.classList.remove('privacy-unlock-grace');
           window.__webPrivacyIsLocked = true;
           document.documentElement.classList.add(LOCK_CLASS);
           var overlay = document.getElementById(OVERLAY_ID);
@@ -85,9 +140,12 @@
           window.dispatchEvent(new Event('webprivacy-lock'));
         }
 
-        function unlockNow() {
-          unlockGraceUntil = Date.now() + UNLOCK_GRACE_MS;
-          window.__webPrivacyUnlockGraceUntil = unlockGraceUntil;
+        function unlockNow(event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          beginUnlockGrace();
           window.__webPrivacyIsLocked = false;
           document.documentElement.classList.remove(LOCK_CLASS);
           var overlay = document.getElementById(OVERLAY_ID);
@@ -102,6 +160,13 @@
           window.dispatchEvent(new Event('webprivacy-unlock'));
         }
 
+        function handleOverlayUnlock(event) {
+          if (!window.__webPrivacyIsLocked) {
+            return;
+          }
+          unlockNow(event);
+        }
+
         window.__webPrivacyLock = lockNow;
         window.__webPrivacyUnlock = unlockNow;
         window.__webPrivacyIsLocked = false;
@@ -110,16 +175,13 @@
 
         var overlay = document.getElementById(OVERLAY_ID);
         if (overlay) {
-          if (isTouch) {
-            overlay.addEventListener('touchend', function () {
-              if (!window.__webPrivacyIsLocked) {
-                return;
-              }
-              unlockNow();
-            }, { passive: true });
-          } else {
-            overlay.addEventListener('click', unlockNow);
-          }
+          overlay.addEventListener('touchend', handleOverlayUnlock, { passive: false });
+          overlay.addEventListener('click', function (event) {
+            if (isTouch) {
+              return;
+            }
+            handleOverlayUnlock(event);
+          });
         }
 
         document.addEventListener(
@@ -133,11 +195,8 @@
         );
         window.addEventListener('pagehide', lockNow, true);
         document.addEventListener('freeze', lockNow, true);
-        document.addEventListener('touchcancel', lockNow, true);
 
-        if (isTouch) {
-          lockNow();
-        }
+        lockNow();
       })();
     </script>
     <script type="module" src="/src/main.jsx"></script>

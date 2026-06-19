@@ -163,6 +163,20 @@ export default function SettingsScreen() {
                 </div>
 
                 <div className="card">
+                    <h2 className="section-title">Portfolio layout</h2>
+                    <p className="section-description">
+                        Change the order assets appear on the home screen.
+                    </p>
+                    <button
+                        type="button"
+                        className="button-secondary mt-16"
+                        onClick={() => navigate('/?reorder=1')}
+                    >
+                        <span className="button-text-secondary">Reorder assets</span>
+                    </button>
+                </div>
+
+                <div className="card">
                     <h2 className="section-title">Backup & sync</h2>
                     <p className="section-description">
                         Export from one device and import into another to copy your

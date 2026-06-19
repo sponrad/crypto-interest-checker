@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
     DndContext,
     closestCenter,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
@@ -16,7 +17,7 @@ import {
     arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Menu, Plus, RefreshCw } from 'lucide-react';
+import { Menu, Plus, RefreshCw, GripVertical, Eye } from 'lucide-react';
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { formatCurrency } from './util.js';
@@ -26,7 +27,17 @@ import Spinner from './Spinner.jsx';
 
 const WEB_PULL_THRESHOLD = 72;
 
-function SortableHolding({ holding, onPress }) {
+function HoldingItem({ holding, onPress }) {
+    return (
+        <div className="holding-list-item">
+            <button type="button" className="holding-link holding-link--full" onClick={onPress}>
+                <AssetRow asset={holding} />
+            </button>
+        </div>
+    );
+}
+
+function SortableHolding({ holding, onPress, suppressClickRef }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
         useSortable({ id: holding.symbol });
 
@@ -35,17 +46,33 @@ function SortableHolding({ holding, onPress }) {
         transition,
     };
 
+    function handleClick() {
+        if (suppressClickRef.current) {
+            return;
+        }
+        onPress();
+    }
+
     return (
         <div ref={setNodeRef} style={style} className="holding-list-item">
-            <button
-                type="button"
-                className={`holding-link${isDragging ? ' holding-link--dragging' : ''}`}
-                onClick={onPress}
-                {...attributes}
-                {...listeners}
+            <div
+                className={`holding-row-shell${
+                    isDragging ? ' holding-row-shell--dragging' : ''
+                }`}
             >
-                <AssetRow asset={holding} dragging={isDragging} />
-            </button>
+                <button
+                    type="button"
+                    className="holding-drag-handle"
+                    aria-label={`Reorder ${holding.name}`}
+                    {...attributes}
+                    {...listeners}
+                >
+                    <GripVertical size={20} strokeWidth={2} />
+                </button>
+                <button type="button" className="holding-link" onClick={handleClick}>
+                    <AssetRow asset={holding} dragging={isDragging} />
+                </button>
+            </div>
         </div>
     );
 }
@@ -53,6 +80,8 @@ function SortableHolding({ holding, onPress }) {
 export default function Home() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const reorderMode = searchParams.get('reorder') === '1';
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [holdings, setHoldings] = useState([]);
@@ -62,9 +91,11 @@ export default function Home() {
     const scrollOffsetY = useRef(0);
     const refreshIdRef = useRef(0);
     const scrollRef = useRef(null);
+    const suppressClickRef = useRef(false);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
@@ -150,6 +181,10 @@ export default function Home() {
         let tracking = false;
 
         const onTouchStart = (event) => {
+            if (event.target.closest('.holding-drag-handle')) {
+                tracking = false;
+                return;
+            }
             if (refreshing || scrollOffsetY.current > 5) {
                 tracking = false;
                 return;
@@ -250,6 +285,37 @@ export default function Home() {
     const totalInterest = holdings.reduce((prev, curr) => prev + curr.yearly(), 0);
     const hasHoldings = holdings.length > 0;
 
+    function openAsset(holding) {
+        navigate(`/asset/${holding.symbol}`, {
+            state: { price: holding.price },
+        });
+    }
+
+    function exitReorderMode() {
+        setSearchParams({});
+    }
+
+    function lockPrivacy() {
+        window.__webPrivacyLock?.();
+    }
+
+    const holdingsList = holdings.map((holding) =>
+        reorderMode ? (
+            <SortableHolding
+                key={holding.symbol}
+                holding={holding}
+                suppressClickRef={suppressClickRef}
+                onPress={() => openAsset(holding)}
+            />
+        ) : (
+            <HoldingItem
+                key={holding.symbol}
+                holding={holding}
+                onPress={() => openAsset(holding)}
+            />
+        ),
+    );
+
     return (
         <div className="container">
             <div
@@ -286,6 +352,14 @@ export default function Home() {
                             <button
                                 type="button"
                                 className="icon-button"
+                                onClick={lockPrivacy}
+                                aria-label="Hide portfolio"
+                            >
+                                <Eye size={22} color="#ddd" />
+                            </button>
+                            <button
+                                type="button"
+                                className="icon-button"
                                 onClick={pullRefresh}
                                 disabled={refreshing}
                                 aria-label="Refresh prices"
@@ -306,7 +380,22 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {multiple !== 1 && (
+                    {reorderMode && hasHoldings && (
+                        <div className="reorder-banner">
+                            <p className="reorder-banner-text">
+                                Drag the handles to reorder your assets
+                            </p>
+                            <button
+                                type="button"
+                                className="button-secondary reorder-banner-button"
+                                onClick={exitReorderMode}
+                            >
+                                <span className="button-text-secondary">Done reordering</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {multiple !== 1 && !reorderMode && (
                         <button
                             type="button"
                             onClick={() => navigate('/settings')}
@@ -353,30 +442,36 @@ export default function Home() {
                     )}
                 </div>
 
-                {hasHoldings && (
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext
-                            items={holdings.map((h) => h.symbol)}
-                            strategy={verticalListSortingStrategy}
+                {hasHoldings &&
+                    (reorderMode ? (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={() => {
+                                suppressClickRef.current = true;
+                            }}
+                            onDragEnd={(event) => {
+                                handleDragEnd(event);
+                                setTimeout(() => {
+                                    suppressClickRef.current = false;
+                                }, 200);
+                            }}
+                            onDragCancel={() => {
+                                setTimeout(() => {
+                                    suppressClickRef.current = false;
+                                }, 200);
+                            }}
                         >
-                            {holdings.map((holding) => (
-                                <SortableHolding
-                                    key={holding.symbol}
-                                    holding={holding}
-                                    onPress={() =>
-                                        navigate(`/asset/${holding.symbol}`, {
-                                            state: { price: holding.price },
-                                        })
-                                    }
-                                />
-                            ))}
-                        </SortableContext>
-                    </DndContext>
-                )}
+                            <SortableContext
+                                items={holdings.map((h) => h.symbol)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {holdingsList}
+                            </SortableContext>
+                        </DndContext>
+                    ) : (
+                        holdingsList
+                    ))}
 
                 <div style={{ height: 100 }} />
             </div>

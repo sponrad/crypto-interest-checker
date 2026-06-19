@@ -405,6 +405,26 @@ textarea {
     color: #f87171;
 }
 
+.reorder-banner {
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.reorder-banner-text {
+    color: #93c5fd;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.reorder-banner-button {
+    margin-top: 0;
+}
+
 .holding-row {
     display: flex;
     align-items: center;
@@ -566,21 +586,52 @@ textarea {
     margin-bottom: 8px;
 }
 
+.holding-row-shell {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.holding-row-shell--dragging {
+    opacity: 0.92;
+}
+
+.holding-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    width: 36px;
+    min-height: 44px;
+    flex-shrink: 0;
+    color: #555;
+    border-radius: 10px;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.holding-drag-handle:active {
+    color: #999;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
 .holding-link {
     display: block;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     text-decoration: none;
     color: inherit;
-    cursor: grab;
-    touch-action: manipulation;
+    touch-action: pan-y;
+}
+
+.holding-link--full {
+    width: 100%;
 }
 
 .holding-link:active {
     opacity: 0.85;
-}
-
-.holding-link--dragging {
-    cursor: grabbing;
 }
 
 .search-bar {
@@ -597,15 +648,13 @@ textarea {
 
 .privacy-splash {
     background-color: #000;
-    flex: 1;
     width: 100%;
     height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: none;
-    cursor: pointer;
 }
 
 .privacy-splash-icon {
