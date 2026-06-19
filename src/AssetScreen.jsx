@@ -1,29 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Text,
-    View,
-    TextInput,
-    ScrollView,
-    Pressable,
-    KeyboardAvoidingView,
-    Platform,
-} from 'react-native';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
-import { styles } from './styles.js';
-import { getAssets, saveAssets } from './localStorage.js';
+import { setPageTitle } from './PageLayout.jsx';
+import { getAssets, saveAssets, getDreamMultiple } from './localStorage.js';
 import AssetRow from './AssetRow.jsx';
 
 function FormSection({ label, children }) {
     return (
-        <View style={styles.card}>
-            <Text style={styles.fieldLabel}>{label}</Text>
+        <div className="card">
+            <p className="field-label">{label}</p>
             {children}
-        </View>
+        </div>
     );
 }
 
-export default function AssetScreen({ route, navigation }) {
-    const { symbol, price } = route.params;
+export default function AssetScreen() {
+    const navigate = useNavigate();
+    const { symbol } = useParams();
+    const location = useLocation();
+    const priceFromNav = location.state?.price;
     const [asset, setAsset] = useState(null);
     const [editQuantity, setEditQuantity] = useState(false);
     const [quantity, setQuantity] = useState(null);
@@ -33,10 +28,13 @@ export default function AssetScreen({ route, navigation }) {
     async function load() {
         const assets = await getAssets();
         const theAsset = assets.find((a) => a.symbol === symbol);
-        navigation.setOptions({
-            title: theAsset.symbol,
-        });
-        theAsset.price = price;
+        if (!theAsset) {
+            navigate('/');
+            return;
+        }
+        setPageTitle(theAsset.symbol);
+        const multiple = (await getDreamMultiple()) || 1;
+        theAsset.price = priceFromNav ?? (theAsset.lastBasePrice || 0) * multiple;
         setAsset(theAsset);
         setQuantity(theAsset.quantity.toString());
         setInterestRate(theAsset.globalInterest().toString());
@@ -44,7 +42,7 @@ export default function AssetScreen({ route, navigation }) {
 
     useEffect(() => {
         load();
-    }, []);
+    }, [symbol]);
 
     if (!asset) {
         return null;
@@ -56,7 +54,7 @@ export default function AssetScreen({ route, navigation }) {
         assets[index].quantity = Number(quantity);
         assets[index].price = asset.price;
         assets[index].setInterestRate(
-            Number(interestRate) || assets[index].globalInterest()
+            Number(interestRate) || assets[index].globalInterest(),
         );
         await saveAssets(assets);
         setAsset(assets[index]);
@@ -66,7 +64,7 @@ export default function AssetScreen({ route, navigation }) {
     async function onRemove() {
         const assets = await getAssets();
         await saveAssets(assets.filter((a) => a.symbol !== symbol));
-        navigation.pop();
+        navigate('/');
     }
 
     async function onSaveInterestRate() {
@@ -95,164 +93,118 @@ export default function AssetScreen({ route, navigation }) {
     const interestDisplay = asset.globalInterest();
 
     return (
-        <View style={styles.container}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                <ScrollView
-                    contentContainerStyle={{
-                        paddingHorizontal: 16,
-                        paddingBottom: 32,
-                    }}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    <View
-                        style={{
-                            ...styles.card,
-                            marginBottom: 20,
-                            paddingVertical: 12,
-                        }}
-                    >
-                        <AssetRow asset={asset} embedded />
-                    </View>
+        <div className="scroll-area">
+            <div className="screen-padding">
+                <div className="card mb-20" style={{ paddingTop: 12, paddingBottom: 12 }}>
+                    <AssetRow asset={asset} embedded />
+                </div>
 
-                    <FormSection label="Holdings">
-                        {!editQuantity ? (
-                            <>
-                                <Text style={styles.valueLarge}>{asset.quantity}</Text>
-                                <Pressable
-                                    style={({ pressed }) => [
-                                        styles.buttonSecondary,
-                                        pressed && { opacity: 0.85 },
-                                    ]}
-                                    onPress={() => setEditQuantity(true)}
+                <FormSection label="Holdings">
+                    {!editQuantity ? (
+                        <>
+                            <p className="value-large">{asset.quantity}</p>
+                            <button
+                                type="button"
+                                className="button-secondary"
+                                onClick={() => setEditQuantity(true)}
+                            >
+                                <span className="button-text-secondary">Edit quantity</span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <input
+                                className="modern-input"
+                                onChange={(e) => setQuantity(e.target.value)}
+                                value={quantity}
+                                placeholder="Quantity"
+                                inputMode="decimal"
+                                autoFocus
+                            />
+                            <div className="button-row mt-14">
+                                <button
+                                    type="button"
+                                    className="button-primary button-primary--in-row"
+                                    disabled={!quantity}
+                                    onClick={onSaveQuantity}
                                 >
-                                    <Text style={styles.buttonTextSecondary}>Edit quantity</Text>
-                                </Pressable>
-                            </>
-                        ) : (
-                            <>
-                                <TextInput
-                                    style={styles.modernInput}
-                                    onChangeText={setQuantity}
-                                    value={quantity}
-                                    placeholder="Quantity"
-                                    placeholderTextColor="#555"
-                                    keyboardType="decimal-pad"
-                                    autoFocus
-                                />
-                                <View style={[styles.buttonRow, { marginTop: 14 }]}>
-                                    <Pressable
-                                        style={({ pressed }) => [
-                                            styles.buttonPrimary,
-                                            styles.buttonPrimaryInRow,
-                                            (!quantity || pressed) && { opacity: quantity ? 0.85 : 0.45 },
-                                        ]}
-                                        disabled={!quantity}
-                                        onPress={onSaveQuantity}
-                                    >
-                                        <Text style={styles.buttonTextPrimary}>Save</Text>
-                                    </Pressable>
-                                    <Pressable
-                                        style={({ pressed }) => [
-                                            styles.buttonGhost,
-                                            pressed && { opacity: 0.7 },
-                                        ]}
-                                        onPress={cancelQuantityEdit}
-                                    >
-                                        <Text style={styles.buttonTextGhost}>Cancel</Text>
-                                    </Pressable>
-                                </View>
-                                <Pressable
-                                    style={({ pressed }) => [
-                                        styles.buttonDestructive,
-                                        pressed && { opacity: 0.85 },
-                                    ]}
-                                    onPress={onRemove}
+                                    <span className="button-text-primary">Save</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="button-ghost"
+                                    onClick={cancelQuantityEdit}
                                 >
-                                    <Text style={styles.buttonTextDestructive}>
-                                        Remove {asset.name}
-                                    </Text>
-                                </Pressable>
-                            </>
-                        )}
-                    </FormSection>
+                                    <span className="button-text-ghost">Cancel</span>
+                                </button>
+                            </div>
+                            <button
+                                type="button"
+                                className="button-destructive"
+                                onClick={onRemove}
+                            >
+                                <span className="button-text-destructive">
+                                    Remove {asset.name}
+                                </span>
+                            </button>
+                        </>
+                    )}
+                </FormSection>
 
-                    <FormSection label="Interest rate">
-                        {!editInterest ? (
-                            <>
-                                <Text style={styles.valueLarge}>
-                                    {interestDisplay}
-                                    <Text style={{ fontSize: 18, color: '#666', fontWeight: '500' }}>
-                                        %
-                                    </Text>
-                                </Text>
-                                <Pressable
-                                    style={({ pressed }) => [
-                                        styles.buttonSecondary,
-                                        pressed && { opacity: 0.85 },
-                                    ]}
-                                    onPress={() => {
-                                        setInterestRate(interestDisplay.toString());
-                                        setEditInterest(true);
-                                    }}
+                <FormSection label="Interest rate">
+                    {!editInterest ? (
+                        <>
+                            <p className="value-large">
+                                {interestDisplay}
+                                <span className="text-muted">%</span>
+                            </p>
+                            <button
+                                type="button"
+                                className="button-secondary"
+                                onClick={() => {
+                                    setInterestRate(interestDisplay.toString());
+                                    setEditInterest(true);
+                                }}
+                            >
+                                <span className="button-text-secondary">
+                                    Edit interest rate
+                                </span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <input
+                                className="modern-input"
+                                onChange={(e) => setInterestRate(e.target.value)}
+                                value={interestRate}
+                                placeholder="e.g. 5.25"
+                                inputMode="decimal"
+                                autoFocus
+                            />
+                            <p className="text-dim mt-8" style={{ marginBottom: 4 }}>
+                                Annual percentage yield
+                            </p>
+                            <div className="button-row mt-12">
+                                <button
+                                    type="button"
+                                    className="button-primary button-primary--in-row"
+                                    disabled={!interestRate}
+                                    onClick={onSaveInterestRate}
                                 >
-                                    <Text style={styles.buttonTextSecondary}>
-                                        Edit interest rate
-                                    </Text>
-                                </Pressable>
-                            </>
-                        ) : (
-                            <>
-                                <TextInput
-                                    style={styles.modernInput}
-                                    onChangeText={setInterestRate}
-                                    value={interestRate}
-                                    placeholder="e.g. 5.25"
-                                    placeholderTextColor="#555"
-                                    keyboardType="decimal-pad"
-                                    autoFocus
-                                />
-                                <Text
-                                    style={{
-                                        color: '#555',
-                                        fontSize: 13,
-                                        marginTop: 8,
-                                        marginBottom: 4,
-                                    }}
+                                    <span className="button-text-primary">Save</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="button-ghost"
+                                    onClick={cancelInterestEdit}
                                 >
-                                    Annual percentage yield
-                                </Text>
-                                <View style={[styles.buttonRow, { marginTop: 10 }]}>
-                                    <Pressable
-                                        style={({ pressed }) => [
-                                            styles.buttonPrimary,
-                                            styles.buttonPrimaryInRow,
-                                            (!interestRate || pressed) && {
-                                                opacity: interestRate ? 0.85 : 0.45,
-                                            },
-                                        ]}
-                                        disabled={!interestRate}
-                                        onPress={onSaveInterestRate}
-                                    >
-                                        <Text style={styles.buttonTextPrimary}>Save</Text>
-                                    </Pressable>
-                                    <Pressable
-                                        style={({ pressed }) => [
-                                            styles.buttonGhost,
-                                            pressed && { opacity: 0.7 },
-                                        ]}
-                                        onPress={cancelInterestEdit}
-                                    >
-                                        <Text style={styles.buttonTextGhost}>Cancel</Text>
-                                    </Pressable>
-                                </View>
-                            </>
-                        )}
-                    </FormSection>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </View>
+                                    <span className="button-text-ghost">Cancel</span>
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </FormSection>
+            </div>
+        </div>
     );
 }

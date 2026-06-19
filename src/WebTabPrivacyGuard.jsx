@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Platform } from 'react-native';
 import { createPortal } from 'react-dom';
 
 import PrivacySplash from './PrivacySplash.jsx';
@@ -23,8 +22,7 @@ function getIdleLockMs() {
 }
 
 function isInUnlockGrace() {
-    return typeof window !== 'undefined'
-        && window.__webPrivacyUnlockGraceUntil > Date.now();
+    return typeof window !== 'undefined' && window.__webPrivacyUnlockGraceUntil > Date.now();
 }
 
 function lockOverlayDom() {
@@ -131,7 +129,7 @@ export default function WebTabPrivacyGuard({ children }) {
     }, [unlock, resetIdleTimer]);
 
     useEffect(() => {
-        if (Platform.OS !== 'web' || typeof document === 'undefined') {
+        if (typeof document === 'undefined') {
             return undefined;
         }
 
@@ -141,12 +139,6 @@ export default function WebTabPrivacyGuard({ children }) {
         }
         setOverlayContainer(el);
         isLockedRef.current = Boolean(window.__webPrivacyIsLocked);
-
-        const onHide = () => {
-            if (document.hidden || document.visibilityState === 'hidden') {
-                lockNow();
-            }
-        };
 
         const onVisibilityChange = () => {
             if (document.hidden || document.visibilityState === 'hidden') {
@@ -217,19 +209,12 @@ export default function WebTabPrivacyGuard({ children }) {
         };
     }, [lockNow, resetIdleTimer]);
 
-    if (Platform.OS !== 'web') {
-        return children;
-    }
-
     return (
-        <View style={{ flex: 1 }}>
+        <>
             {children}
             {overlayContainer
-                ? createPortal(
-                      <PrivacySplash onUnlock={handleUnlock} />,
-                      overlayContainer,
-                  )
+                ? createPortal(<PrivacySplash onUnlock={handleUnlock} />, overlayContainer)
                 : null}
-        </View>
+        </>
     );
 }

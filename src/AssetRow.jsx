@@ -1,48 +1,36 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Text, View } from 'react-native';
 
-import { styles } from './styles.js';
 import { formatCurrency, formatQuantity } from './util.js';
 import AssetImage from './AssetImage.jsx';
 
-export default function AssetRow({ asset, isActive, embedded }) {
+export default function AssetRow({ asset, isActive, embedded, dragging }) {
     const meta = `${formatQuantity(asset.quantity)} @ ${formatCurrency(asset.price)}`;
 
-    const rowStyle = embedded
-        ? styles.holdingRowEmbedded
-        : [styles.holdingRow, isActive && styles.holdingRowActive];
+    const rowClass = embedded
+        ? 'holding-row holding-row--embedded'
+        : [
+              'holding-row',
+              isActive && 'holding-row--active',
+              dragging && 'holding-row--dragging',
+          ]
+              .filter(Boolean)
+              .join(' ');
 
     return (
-        <View style={rowStyle}>
+        <div className={rowClass}>
             <AssetImage asset={asset} />
-            <View style={styles.holdingMain}>
-                <Text style={styles.holdingName} numberOfLines={1} ellipsizeMode="tail">
-                    {asset.name}
-                </Text>
-                <Text style={styles.holdingMeta} numberOfLines={1} ellipsizeMode="middle">
-                    {meta}
-                </Text>
-            </View>
-            <View style={styles.holdingValues}>
-                <Text
-                    style={styles.holdingBalance}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.65}
-                >
-                    {formatCurrency(asset.balance(), false)}
-                </Text>
-                <Text
-                    style={styles.holdingInterest}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.7}
-                >
+            <div className="holding-main">
+                <div className="holding-name">{asset.name}</div>
+                <div className="holding-meta">{meta}</div>
+            </div>
+            <div className="holding-values">
+                <div className="holding-balance">{formatCurrency(asset.balance(), false)}</div>
+                <div className="holding-interest">
                     {formatCurrency(asset.yearly() / 12, false)} / mo
-                </Text>
-            </View>
-        </View>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -50,4 +38,5 @@ AssetRow.propTypes = {
     asset: PropTypes.object.isRequired,
     isActive: PropTypes.bool,
     embedded: PropTypes.bool,
+    dragging: PropTypes.bool,
 };

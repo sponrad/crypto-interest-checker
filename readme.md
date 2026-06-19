@@ -1,86 +1,44 @@
 # Crypto Checker with Interest
 
-Expo SDK 54 app. Portfolio tracker with interest earnings and dream-mode price multipliers.
+React web app. Portfolio tracker with interest earnings and dream-mode price multipliers.
 
 ## Prerequisites
 
-- Node.js **≥ 20.19.4** (LTS recommended)
-- [EAS CLI](https://docs.expo.dev/build/setup/): `npm install -g eas-cli`
-- Expo account: `eas login`
+- Node.js **≥ 20**
 
 ## Run locally
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-Scan the QR code in **Expo Go** on your phone (App Store version supports SDK 54), or press `i` for the iOS simulator.
+Open the URL Vite prints (usually `http://localhost:5173`).
 
-## Test on a physical device (internal build)
-
-Register devices once:
+## Production build
 
 ```bash
-eas device:create
+npm run build
+npm run preview   # optional: serve dist/ locally
 ```
 
-Build and install:
+Output goes to `dist/`.
+
+## Deploy (Docker)
 
 ```bash
-eas build --profile preview --platform ios
+docker build -t crypto-checker-web .
+docker run --rm -p 8080:80 crypto-checker-web
 ```
 
-Use the QR code / install link from the EAS dashboard when the build finishes.
+See `dokploy.md` for Dokploy setup.
 
-## Production build & store submit
+## iPhone home screen
 
-Version numbers live in `app.json`:
+Safari → share → **Add to Home Screen**. Data persists in that browser’s localStorage for your domain.
 
-- `expo.version` — user-facing version (e.g. `1.0.6`)
-- `expo.ios.buildNumber` — must increase for each App Store upload
-- `expo.android.versionCode` — must increase for each Play Store upload
+**Important:** Safari and the Home Screen shortcut use **separate storage**. Use **Settings → Export/Import** to copy your portfolio between them.
 
-Build for both stores:
+## Native app (archived)
 
-```bash
-eas build --profile production --platform all
-```
-
-Submit after builds succeed:
-
-```bash
-eas submit --profile production --platform ios
-eas submit --profile production --platform android
-```
-
-- **iOS** — EAS prompts for Apple credentials if not already saved. Bundle ID: `com.sponrad.cryptointerestchecker`
-- **Android** — uses the Play Console service account configured in `eas.json` (`submit.production.android.serviceAccountKeyPath`)
-
-To submit a specific build:
-
-```bash
-eas submit --profile production --platform ios --latest
-eas submit --profile production --platform android --latest
-```
-
-## Store checklist
-
-**Apple App Store Connect**
-
-- Updated screenshots if required (6.5" iPhone, 5.5" iPhone, 12.9" iPad)
-- App Privacy / data collection questionnaire
-- Release notes ("What's New")
-
-**Google Play Console**
-
-- Data safety form
-- Release notes
-
-## Useful commands
-
-```bash
-npx expo-doctor          # verify dependency compatibility
-eas build:list           # recent builds
-eas submit:list          # recent submissions
-```
+The Expo / React Native version lives on a separate git branch if you need App Store builds again.

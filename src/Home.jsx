@@ -1,37 +1,72 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Text,
-    View,
-    ActivityIndicator,
-    TouchableOpacity,
-    Pressable,
-    Platform,
-    FlatList,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { RefreshControl } from 'react-native-gesture-handler';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import Ionicons from '@expo/vector-icons/Ionicons';
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+    arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Menu, Plus, RefreshCw } from 'lucide-react';
 
 import { coinDataBackend } from './coinDataBackend.js';
-import { styles } from './styles.js';
 import { formatCurrency } from './util.js';
 import { getAssets, saveAssets, getDreamMultiple } from './localStorage.js';
 import AssetRow from './AssetRow.jsx';
+import Spinner from './Spinner.jsx';
 
 const WEB_PULL_THRESHOLD = 72;
-const isWeb = Platform.OS === 'web';
 
-export default function Home({ navigation }) {
+function SortableHolding({ holding, onPress }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+        useSortable({ id: holding.symbol });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="holding-list-item">
+            <button
+                type="button"
+                className={`holding-link${isDragging ? ' holding-link--dragging' : ''}`}
+                onClick={onPress}
+                {...attributes}
+                {...listeners}
+            >
+                <AssetRow asset={holding} dragging={isDragging} />
+            </button>
+        </div>
+    );
+}
+
+export default function Home() {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [refreshEnabled, setRefreshEnabled] = useState(true);
     const [holdings, setHoldings] = useState([]);
     const [multiple, setMultiple] = useState(1);
     const [webPullDistance, setWebPullDistance] = useState(0);
     const webPullDistanceRef = useRef(0);
     const scrollOffsetY = useRef(0);
     const refreshIdRef = useRef(0);
+    const scrollRef = useRef(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
 
     function applyDreamPrices(assets, theMultiple) {
         return assets.map((asset) => {
@@ -105,119 +140,109 @@ export default function Home({ navigation }) {
         refresh({ showSpinner: true, fetchPrices: true });
     }
 
-    const listRef = useRef(null);
-
     useEffect(() => {
-        if (!isWeb) {
+        const scrollEl = scrollRef.current;
+        if (!scrollEl) {
             return undefined;
         }
 
-        let removed = false;
-        let domCleanup = () => {};
-        const timer = setTimeout(() => {
-            if (removed) {
+        let startY = 0;
+        let tracking = false;
+
+        const onTouchStart = (event) => {
+            if (refreshing || scrollOffsetY.current > 5) {
+                tracking = false;
                 return;
             }
+            startY = event.touches[0].clientY;
+            tracking = true;
+        };
 
-            const scrollRef = listRef.current?.getNativeScrollRef?.();
-            const scrollEl =
-                listRef.current?.getScrollableNode?.() ||
-                scrollRef?.getScrollableNode?.() ||
-                scrollRef?._scrollRef ||
-                scrollRef;
-
-            if (!scrollEl?.addEventListener) {
+        const onTouchMove = (event) => {
+            if (!tracking) {
                 return;
             }
-
-            let startY = 0;
-            let tracking = false;
-
-            const onTouchStart = (event) => {
-                if (!refreshEnabled || refreshing || scrollOffsetY.current > 5) {
-                    tracking = false;
-                    return;
-                }
-                startY = event.touches[0].clientY;
-                tracking = true;
-            };
-
-            const onTouchMove = (event) => {
-                if (!tracking) {
-                    return;
-                }
-                if (scrollOffsetY.current > 5) {
-                    tracking = false;
-                    webPullDistanceRef.current = 0;
-                    setWebPullDistance(0);
-                    return;
-                }
-                const delta = event.touches[0].clientY - startY;
-                if (delta > 0) {
-                    const distance = Math.min(delta, 100);
-                    webPullDistanceRef.current = distance;
-                    setWebPullDistance(distance);
-                } else {
-                    tracking = false;
-                    webPullDistanceRef.current = 0;
-                    setWebPullDistance(0);
-                }
-            };
-
-            const onTouchEnd = () => {
-                if (
-                    tracking &&
-                    webPullDistanceRef.current >= WEB_PULL_THRESHOLD &&
-                    !refreshing
-                ) {
-                    pullRefresh();
-                }
+            if (scrollOffsetY.current > 5) {
                 tracking = false;
                 webPullDistanceRef.current = 0;
                 setWebPullDistance(0);
-            };
+                return;
+            }
+            const delta = event.touches[0].clientY - startY;
+            if (delta > 0) {
+                const distance = Math.min(delta, 100);
+                webPullDistanceRef.current = distance;
+                setWebPullDistance(distance);
+            } else {
+                tracking = false;
+                webPullDistanceRef.current = 0;
+                setWebPullDistance(0);
+            }
+        };
 
-            scrollEl.addEventListener('touchstart', onTouchStart, { passive: true });
-            scrollEl.addEventListener('touchmove', onTouchMove, { passive: true });
-            scrollEl.addEventListener('touchend', onTouchEnd, { passive: true });
-            scrollEl.addEventListener('touchcancel', onTouchEnd, { passive: true });
+        const onTouchEnd = () => {
+            if (
+                tracking &&
+                webPullDistanceRef.current >= WEB_PULL_THRESHOLD &&
+                !refreshing
+            ) {
+                pullRefresh();
+            }
+            tracking = false;
+            webPullDistanceRef.current = 0;
+            setWebPullDistance(0);
+        };
 
-            domCleanup = () => {
-                scrollEl.removeEventListener('touchstart', onTouchStart);
-                scrollEl.removeEventListener('touchmove', onTouchMove);
-                scrollEl.removeEventListener('touchend', onTouchEnd);
-                scrollEl.removeEventListener('touchcancel', onTouchEnd);
-            };
-        }, 100);
+        scrollEl.addEventListener('touchstart', onTouchStart, { passive: true });
+        scrollEl.addEventListener('touchmove', onTouchMove, { passive: true });
+        scrollEl.addEventListener('touchend', onTouchEnd, { passive: true });
+        scrollEl.addEventListener('touchcancel', onTouchEnd, { passive: true });
 
         return () => {
-            removed = true;
-            clearTimeout(timer);
-            domCleanup();
+            scrollEl.removeEventListener('touchstart', onTouchStart);
+            scrollEl.removeEventListener('touchmove', onTouchMove);
+            scrollEl.removeEventListener('touchend', onTouchEnd);
+            scrollEl.removeEventListener('touchcancel', onTouchEnd);
         };
-    }, [refreshEnabled, refreshing]);
+    }, [refreshing]);
 
     useEffect(() => {
         refresh({ fetchPrices: true });
     }, []);
 
     useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
+        if (location.pathname === '/') {
             refresh({ fetchPrices: false });
-        });
-        return unsubscribe;
-    }, [navigation]);
+        }
+    }, [location.pathname]);
+
+    async function handleDragEnd(event) {
+        const { active, over } = event;
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        const oldIndex = holdings.findIndex((h) => h.symbol === active.id);
+        const newIndex = holdings.findIndex((h) => h.symbol === over.id);
+        const reordered = arrayMove(holdings, oldIndex, newIndex);
+        setHoldings(reordered);
+
+        const assets = await getAssets();
+        const bySymbol = Object.fromEntries(assets.map((asset) => [asset.symbol, asset]));
+        const saved = reordered.map((holding) => bySymbol[holding.symbol]).filter(Boolean);
+        if (saved.length === reordered.length) {
+            await saveAssets(saved);
+        }
+    }
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator color="#22c55e" size="large" />
-                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-                        Loading portfolio
-                    </Text>
-                </View>
-            </SafeAreaView>
+            <div className="container">
+                <div className="loading-container">
+                    <Spinner />
+                    <p className="field-label mt-16">Loading portfolio</p>
+                </div>
+            </div>
         );
     }
 
@@ -225,212 +250,136 @@ export default function Home({ navigation }) {
     const totalInterest = holdings.reduce((prev, curr) => prev + curr.yearly(), 0);
     const hasHoldings = holdings.length > 0;
 
-    function ListHeader() {
-        return (
-            <View
-                style={[
-                    styles.homeScreenPadding,
-                    { paddingTop: Platform.OS === 'android' ? 8 : 0 },
-                ]}
-            >
-                {isWeb && (refreshing || webPullDistance > 12) && (
-                    <View
-                        style={{
-                            alignItems: 'center',
-                            paddingBottom: 8,
-                            opacity: refreshing
-                                ? 1
-                                : Math.min(webPullDistance / WEB_PULL_THRESHOLD, 1),
-                        }}
-                    >
-                        <ActivityIndicator color="#22c55e" size="small" />
-                    </View>
-                )}
-
-                <View style={styles.homeToolbar}>
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.iconButton,
-                            pressed && { opacity: 0.85 },
-                        ]}
-                        onPress={() => navigation.navigate('Settings')}
-                    >
-                        <Ionicons name="menu" size={24} color="#ddd" />
-                    </Pressable>
-                    <View style={{ flexDirection: 'row', gap: 4 }}>
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.iconButton,
-                                pressed && { opacity: 0.85 },
-                            ]}
-                            onPress={pullRefresh}
-                            disabled={refreshing}
-                        >
-                            <Ionicons
-                                name="refresh"
-                                size={22}
-                                color={refreshing ? '#555' : '#ddd'}
-                            />
-                        </Pressable>
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.iconButton,
-                                pressed && { opacity: 0.85 },
-                            ]}
-                            onPress={() => navigation.navigate('Add')}
-                        >
-                            <Ionicons name="add" size={26} color="#ddd" />
-                        </Pressable>
-                    </View>
-                </View>
-
-                {multiple !== 1 && (
-                    <Pressable
-                        onPress={() => navigation.navigate('Settings')}
-                        style={[
-                            styles.dreamBanner,
-                            multiple < 1 && styles.dreamBannerNegative,
-                        ]}
-                    >
-                        <Text
-                            style={[
-                                styles.dreamBannerText,
-                                { color: multiple >= 1 ? '#22c55e' : '#f87171' },
-                            ]}
-                        >
-                            Prices multiplied {multiple}x — tap to adjust
-                        </Text>
-                    </Pressable>
-                )}
-
-                {hasHoldings ? (
-                    <View style={[styles.card, { marginBottom: 12 }]}>
-                        <Text style={styles.fieldLabel}>Total balance</Text>
-                        <Text
-                            style={styles.portfolioBalance}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            minimumFontScale={0.5}
-                        >
-                            {formatCurrency(totalBalance, false)}
-                        </Text>
-                        <Text
-                            style={styles.portfolioInterest}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            minimumFontScale={0.7}
-                        >
-                            {formatCurrency(totalInterest / 12, false)} / mo interest
-                        </Text>
-                    </View>
-                ) : (
-                    !refreshing && (
-                        <View style={[styles.card, { alignItems: 'center' }]}>
-                            <Text style={styles.sectionTitle}>No assets yet</Text>
-                            <Text style={[styles.sectionDescription, { textAlign: 'center' }]}>
-                                Add holdings to track balances and interest.
-                            </Text>
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.buttonSecondary,
-                                    { marginTop: 16, alignSelf: 'stretch' },
-                                    pressed && { opacity: 0.85 },
-                                ]}
-                                onPress={() => navigation.navigate('Add')}
-                            >
-                                <Text style={styles.buttonTextSecondary}>Add assets</Text>
-                            </Pressable>
-                        </View>
-                    )
-                )}
-            </View>
-        );
-    }
-
-    function renderHoldingItem(holding, { drag, isActive } = {}) {
-        if (!holding) {
-            return null;
-        }
-        return (
-            <View style={[styles.homeScreenPadding, { marginBottom: 8 }]}>
-                <TouchableOpacity
-                    onLongPress={drag}
-                    disabled={isActive}
-                    activeOpacity={0.85}
-                    onPress={() => {
-                        navigation.navigate('Asset', {
-                            symbol: holding.symbol,
-                            price: holding.price,
-                        });
-                    }}
-                >
-                    <AssetRow asset={holding} isActive={isActive} />
-                </TouchableOpacity>
-            </View>
-        );
-    }
-
-    const listHeader = <ListHeader />;
-    const listProps = {
-        ref: listRef,
-        style: { flex: 1 },
-        data: holdings,
-        keyExtractor: (holding) => holding.symbol,
-        ListHeaderComponent: listHeader,
-        contentContainerStyle: { paddingBottom: 100 },
-        ListFooterComponent: <View style={{ height: 24 }} />,
-        onScroll: (event) => {
-            scrollOffsetY.current = event.nativeEvent.contentOffset.y;
-        },
-        scrollEventThrottle: 16,
-    };
-
-    if (isWeb) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <FlatList
-                    {...listProps}
-                    renderItem={({ item }) => renderHoldingItem(item)}
-                />
-            </SafeAreaView>
-        );
-    }
-
     return (
-        <SafeAreaView style={styles.container}>
-            <DraggableFlatList
-                {...listProps}
-                onDragBegin={() => setRefreshEnabled(false)}
-                onDragEnd={({ data }) => {
-                    setRefreshEnabled(true);
-                    setHoldings(data);
-                    getAssets().then(async (assets) => {
-                        const bySymbol = Object.fromEntries(
-                            assets.map((asset) => [asset.symbol, asset])
-                        );
-                        const reordered = data
-                            .map((holding) => bySymbol[holding.symbol])
-                            .filter(Boolean);
-                        if (reordered.length === data.length) {
-                            await saveAssets(reordered);
-                        }
-                    });
+        <div className="container">
+            <div
+                ref={scrollRef}
+                className="home-scroll"
+                onScroll={(event) => {
+                    scrollOffsetY.current = event.currentTarget.scrollTop;
                 }}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        enabled={refreshEnabled}
-                        colors={['#22c55e']}
-                        tintColor="#22c55e"
-                        onRefresh={pullRefresh}
-                    />
-                }
-                renderItem={({ item, drag, isActive }) => (
-                    <ScaleDecorator>
-                        {renderHoldingItem(item, { drag, isActive })}
-                    </ScaleDecorator>
+            >
+                <div className="home-screen-padding">
+                    {(refreshing || webPullDistance > 12) && (
+                        <div
+                            className="pull-indicator"
+                            style={{
+                                opacity: refreshing
+                                    ? 1
+                                    : Math.min(webPullDistance / WEB_PULL_THRESHOLD, 1),
+                            }}
+                        >
+                            <Spinner small />
+                        </div>
+                    )}
+
+                    <div className="home-toolbar">
+                        <button
+                            type="button"
+                            className="icon-button"
+                            onClick={() => navigate('/settings')}
+                            aria-label="Settings"
+                        >
+                            <Menu size={24} color="#ddd" />
+                        </button>
+                        <div className="icon-button-group">
+                            <button
+                                type="button"
+                                className="icon-button"
+                                onClick={pullRefresh}
+                                disabled={refreshing}
+                                aria-label="Refresh prices"
+                            >
+                                <RefreshCw
+                                    size={22}
+                                    color={refreshing ? '#555' : '#ddd'}
+                                />
+                            </button>
+                            <button
+                                type="button"
+                                className="icon-button"
+                                onClick={() => navigate('/add')}
+                                aria-label="Add asset"
+                            >
+                                <Plus size={26} color="#ddd" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {multiple !== 1 && (
+                        <button
+                            type="button"
+                            onClick={() => navigate('/settings')}
+                            className={`dream-banner${multiple < 1 ? ' dream-banner--negative' : ''}`}
+                        >
+                            <span
+                                className={`dream-banner-text${
+                                    multiple >= 1
+                                        ? ' dream-banner-text--positive'
+                                        : ' dream-banner-text--negative'
+                                }`}
+                            >
+                                Prices multiplied {multiple}x — tap to adjust
+                            </span>
+                        </button>
+                    )}
+
+                    {hasHoldings ? (
+                        <div className="card mb-12">
+                            <p className="field-label">Total balance</p>
+                            <p className="portfolio-balance">
+                                {formatCurrency(totalBalance, false)}
+                            </p>
+                            <p className="portfolio-interest">
+                                {formatCurrency(totalInterest / 12, false)} / mo interest
+                            </p>
+                        </div>
+                    ) : (
+                        !refreshing && (
+                            <div className="card card--centered">
+                                <h2 className="section-title">No assets yet</h2>
+                                <p className="section-description">
+                                    Add holdings to track balances and interest.
+                                </p>
+                                <button
+                                    type="button"
+                                    className="button-secondary mt-16"
+                                    onClick={() => navigate('/add')}
+                                >
+                                    <span className="button-text-secondary">Add assets</span>
+                                </button>
+                            </div>
+                        )
+                    )}
+                </div>
+
+                {hasHoldings && (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={holdings.map((h) => h.symbol)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {holdings.map((holding) => (
+                                <SortableHolding
+                                    key={holding.symbol}
+                                    holding={holding}
+                                    onPress={() =>
+                                        navigate(`/asset/${holding.symbol}`, {
+                                            state: { price: holding.price },
+                                        })
+                                    }
+                                />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
                 )}
-            />
-        </SafeAreaView>
+
+                <div style={{ height: 100 }} />
+            </div>
+        </div>
     );
 }

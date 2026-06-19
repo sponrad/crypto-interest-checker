@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Text,
-    View,
-    TextInput,
-    Pressable,
-    ScrollView,
-    Platform,
-} from 'react-native';
+import { useNavigate } from 'react-router-dom';
 
-import { styles } from './styles.js';
 import {
     getDreamMultiple,
     setDreamMultiple,
@@ -17,10 +9,9 @@ import {
 } from './localStorage.js';
 
 const PRESETS = ['0.5', '2', '4', '8', '10', '15', '20'];
-const isWeb = Platform.OS === 'web';
 
 function isStandaloneWebApp() {
-    if (!isWeb || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
         return false;
     }
     return (
@@ -29,7 +20,8 @@ function isStandaloneWebApp() {
     );
 }
 
-export default function SettingsScreen({ navigation }) {
+export default function SettingsScreen() {
+    const navigate = useNavigate();
     const [multiple, setMultiple] = useState('1');
     const [backupMessage, setBackupMessage] = useState('');
     const [importText, setImportText] = useState('');
@@ -56,13 +48,13 @@ export default function SettingsScreen({ navigation }) {
 
     async function dreamAndLeave(val) {
         await applyDreamMultiple(val);
-        navigation.navigate('Home');
+        navigate('/');
     }
 
     async function copyBackup() {
         try {
             const json = await exportPortfolioJson();
-            if (isWeb && navigator.clipboard?.writeText) {
+            if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(json);
                 setBackupMessage('Portfolio copied to clipboard.');
             } else {
@@ -76,7 +68,7 @@ export default function SettingsScreen({ navigation }) {
     }
 
     async function pasteFromClipboard() {
-        if (!isWeb || !navigator.clipboard?.readText) {
+        if (!navigator.clipboard?.readText) {
             return;
         }
         try {
@@ -101,190 +93,148 @@ export default function SettingsScreen({ navigation }) {
     }
 
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.screenPadding}>
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>
+        <div className="scroll-area">
+            <div className="screen-padding">
+                <div className="card">
+                    <h2 className="section-title">
                         {isDreamMode ? 'Dream' : 'Nightmare'} mode
-                    </Text>
-                    <Text style={styles.sectionDescription}>
-                        Multiply asset prices to see how your portfolio performs as
-                        the market changes. Only affects the main screen.
-                    </Text>
+                    </h2>
+                    <p className="section-description">
+                        Multiply asset prices to see how your portfolio performs as the
+                        market changes. Only affects the main screen.
+                    </p>
 
                     {multipleNum !== 1 && (
-                        <Text style={[styles.valueLarge, { marginTop: 16, marginBottom: 0 }]}>
+                        <p className="value-large mt-16" style={{ marginBottom: 0 }}>
                             {multipleNum}
-                            <Text style={{ fontSize: 18, color: '#666', fontWeight: '500' }}>
-                                x
-                            </Text>
-                        </Text>
+                            <span className="text-muted">x</span>
+                        </p>
                     )}
 
-                    <View style={styles.chipGrid}>
+                    <div className="chip-grid">
                         {PRESETS.map((dream) => {
                             const active = isActive(dream);
                             return (
-                                <Pressable
+                                <button
                                     key={dream}
-                                    onPress={() => dreamAndLeave(dream)}
-                                    style={({ pressed }) => [
-                                        styles.chip,
-                                        active && styles.chipActive,
-                                        pressed && !active && { opacity: 0.85 },
-                                    ]}
+                                    type="button"
+                                    onClick={() => dreamAndLeave(dream)}
+                                    className={`chip${active ? ' chip--active' : ''}`}
                                 >
-                                    <Text
-                                        style={[
-                                            styles.chipText,
-                                            active && styles.chipTextActive,
-                                        ]}
+                                    <span
+                                        className={`chip-text${active ? ' chip-text--active' : ''}`}
                                     >
                                         {dream}x
-                                    </Text>
-                                </Pressable>
+                                    </span>
+                                </button>
                             );
                         })}
-                    </View>
+                    </div>
 
                     {multipleNum !== 1 && (
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.buttonSecondary,
-                                { marginTop: 16 },
-                                pressed && { opacity: 0.85 },
-                            ]}
-                            onPress={() => dreamAndLeave('1')}
+                        <button
+                            type="button"
+                            className="button-secondary mt-16"
+                            onClick={() => dreamAndLeave('1')}
                         >
-                            <Text style={styles.buttonTextSecondary}>Reset to 1x</Text>
-                        </Pressable>
+                            <span className="button-text-secondary">Reset to 1x</span>
+                        </button>
                     )}
 
-                    <Text style={[styles.fieldLabel, { marginTop: 24 }]}>
-                        Custom multiplier
-                    </Text>
-                    <TextInput
-                        style={styles.modernInput}
+                    <p className="field-label mt-24">Custom multiplier</p>
+                    <input
+                        className="modern-input"
                         value={multiple}
-                        onChangeText={updateDreamMultiple}
+                        onChange={(e) => updateDreamMultiple(e.target.value)}
                         placeholder="e.g. 1, 10, 0.5"
-                        placeholderTextColor="#555"
-                        keyboardType="decimal-pad"
+                        inputMode="decimal"
                     />
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.buttonPrimary,
-                            { marginTop: 12 },
-                            pressed && { opacity: 0.85 },
-                        ]}
-                        onPress={() => applyDreamMultiple(multiple).then(() => navigation.navigate('Home'))}
+                    <button
+                        type="button"
+                        className="button-primary mt-12"
+                        onClick={() =>
+                            applyDreamMultiple(multiple).then(() => navigate('/'))
+                        }
                     >
-                        <Text style={[styles.buttonTextPrimary, { textAlign: 'center' }]}>
+                        <span className="button-text-primary" style={{ textAlign: 'center' }}>
                             Apply & return home
-                        </Text>
-                    </Pressable>
-                </View>
+                        </span>
+                    </button>
+                </div>
 
-                {isWeb && (
-                    <View style={styles.card}>
-                        <Text style={styles.sectionTitle}>Backup & sync</Text>
-                        <Text style={styles.sectionDescription}>
-                          Export from one and import into the other to copy your
-                          portfolio.
-                        </Text>
-                        {isStandaloneWebApp() && (
-                            <Text style={[styles.bodyText, { marginTop: 8 }]}>
-                                You are using the Home Screen app.
-                            </Text>
-                        )}
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.buttonSecondary,
-                                { marginTop: 16 },
-                                pressed && { opacity: 0.85 },
-                            ]}
-                            onPress={copyBackup}
+                <div className="card">
+                    <h2 className="section-title">Backup & sync</h2>
+                    <p className="section-description">
+                        Export from one device and import into another to copy your
+                        portfolio.
+                    </p>
+                    {isStandaloneWebApp() && (
+                        <p className="body-text mt-8">
+                            You are using the Home Screen app.
+                        </p>
+                    )}
+                    <button type="button" className="button-secondary mt-16" onClick={copyBackup}>
+                        <span className="button-text-secondary">Export portfolio</span>
+                    </button>
+                    {navigator.clipboard?.readText && (
+                        <button
+                            type="button"
+                            className="button-secondary mt-12"
+                            onClick={pasteFromClipboard}
                         >
-                            <Text style={styles.buttonTextSecondary}>
-                                Export portfolio
-                            </Text>
-                        </Pressable>
-                        {isWeb &&
-                            typeof navigator !== 'undefined' &&
-                            navigator.clipboard?.readText && (
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.buttonSecondary,
-                                    { marginTop: 10 },
-                                    pressed && { opacity: 0.85 },
-                                ]}
-                                onPress={pasteFromClipboard}
+                            <span className="button-text-secondary">Paste from clipboard</span>
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        className="button-ghost mt-12"
+                        onClick={() => setShowImport((value) => !value)}
+                    >
+                        <span className="button-text-ghost">
+                            {showImport ? 'Hide import' : 'Import portfolio'}
+                        </span>
+                    </button>
+                    {showImport && (
+                        <>
+                            <textarea
+                                className="modern-input modern-input--multiline mt-12"
+                                value={importText}
+                                onChange={(e) => setImportText(e.target.value)}
+                                placeholder="Paste backup JSON here"
+                                autoCapitalize="off"
+                                autoCorrect="off"
+                            />
+                            <button
+                                type="button"
+                                className="button-primary mt-12"
+                                onClick={restoreBackup}
                             >
-                                <Text style={styles.buttonTextSecondary}>
-                                    Paste from clipboard
-                                </Text>
-                            </Pressable>
-                        )}
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.buttonGhost,
-                                { marginTop: 10 },
-                                pressed && { opacity: 0.7 },
-                            ]}
-                            onPress={() => setShowImport((value) => !value)}
-                        >
-                            <Text style={styles.buttonTextGhost}>
-                                {showImport ? 'Hide import' : 'Import portfolio'}
-                            </Text>
-                        </Pressable>
-                        {showImport && (
-                            <>
-                                <TextInput
-                                    style={[styles.modernInput, { marginTop: 12, minHeight: 120 }]}
-                                    value={importText}
-                                    onChangeText={setImportText}
-                                    placeholder="Paste backup JSON here"
-                                    placeholderTextColor="#555"
-                                    multiline
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                />
-                                <Pressable
-                                    style={({ pressed }) => [
-                                        styles.buttonPrimary,
-                                        { marginTop: 12 },
-                                        pressed && { opacity: 0.85 },
-                                    ]}
-                                    onPress={restoreBackup}
+                                <span
+                                    className="button-text-primary"
+                                    style={{ textAlign: 'center' }}
                                 >
-                                    <Text style={[styles.buttonTextPrimary, { textAlign: 'center' }]}>
-                                        Restore backup
-                                    </Text>
-                                </Pressable>
-                            </>
-                        )}
-                        {backupMessage ? (
-                            <Text style={[styles.bodyText, { marginTop: 12 }]}>
-                                {backupMessage}
-                            </Text>
-                        ) : null}
-                    </View>
-                )}
+                                    Restore backup
+                                </span>
+                            </button>
+                        </>
+                    )}
+                    {backupMessage ? (
+                        <p className="body-text mt-12">{backupMessage}</p>
+                    ) : null}
+                </div>
 
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>About</Text>
-                    <Text style={styles.bodyText}>
-                        Crypto Checker with Interest by Conrad Frame.
-                    </Text>
-                    <Text style={styles.bodyText}>
+                <div className="card">
+                    <h2 className="section-title">About</h2>
+                    <p className="body-text">Crypto Checker with Interest by Conrad Frame.</p>
+                    <p className="body-text">
                         Email{' '}
-                        <Text selectable style={styles.linkText}>
+                        <span className="link-text" style={{ userSelect: 'all' }}>
                             conrad@devlabtech.com
-                        </Text>{' '}
+                        </span>{' '}
                         for support.
-                    </Text>
-                </View>
-            </ScrollView>
-        </View>
+                    </p>
+                </div>
+            </div>
+        </div>
     );
 }

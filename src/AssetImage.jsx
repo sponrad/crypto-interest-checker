@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
-import { Image } from 'react-native';
 
 import { coinDataBackend } from './coinDataBackend.js';
 
-export default function AssetImage(props) {
-    const style = {
-        width: 40,
-        height: 40,
-    };
-    return <Image style={style}
-                  source={{
-                      uri: props.asset.getImageUrl(coinDataBackend),
-                  }} />
+export default function AssetImage({ asset }) {
+    return (
+        <img
+            className="asset-image"
+            src={asset.getImageUrl(coinDataBackend)}
+            alt=""
+            width={40}
+            height={40}
+            style={{ borderRadius: '50%', flexShrink: 0 }}
+        />
+    );
 }
 
 AssetImage.propTypes = {

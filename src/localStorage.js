@@ -1,11 +1,9 @@
-import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Asset, InterestAccount } from './models.js';
 
-const secureStorageKey = (key) => `secure:${key}`;
-const assetsKey = 'local-storage-asset-key';
 const webPortfolioKey = 'crypto-checker-portfolio-v1';
+const legacySecurePrefix = 'secure:';
+const legacyAssetsKey = 'local-storage-asset-key';
+const dreamMultipleKey = 'dream-mode-multiple-key';
 
 function assetToJson(asset) {
     return {
@@ -66,63 +64,46 @@ function normalizeInterestAccounts(json) {
             new InterestAccount(
                 ia.name || ia.n,
                 ia.interestTiers || ia.t,
-                ia.quantity ?? ia.q ?? 0
-            )
+                ia.quantity ?? ia.q ?? 0,
+            ),
     );
 }
 
-async function save(key, value) {
-    if (Platform.OS === 'web') {
-        await AsyncStorage.setItem(secureStorageKey(key), value);
-        return;
-    }
-    await SecureStore.setItemAsync(key, value);
-}
-
-async function getValueFor(key) {
-    if (Platform.OS === 'web') {
-        return await AsyncStorage.getItem(secureStorageKey(key));
-    }
-    const result = await SecureStore.getItemAsync(key);
-    if (!result) {
+function getItem(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch {
         return null;
     }
-    return result;
 }
 
-async function saveInsecure(key, value) {
-    await AsyncStorage.setItem(key, value);
+function setItem(key, value) {
+    localStorage.setItem(key, value);
 }
 
-async function getInsecureValueFor(key) {
-    const result = await AsyncStorage.getItem(key);
-    if (!result) {
-        return '[]';
-    }
-    return result;
-}
-
-async function loadLegacyNativeAssets() {
-    const assetsData = await getValueFor(assetsKey);
-    if (!assetsData) {
+async function loadLegacyWebAssets() {
+    const secureData = getItem(legacySecurePrefix + legacyAssetsKey);
+    if (!secureData) {
         return [];
     }
-    let combinedData = JSON.parse(assetsData);
-    const nonsecureData = await getInsecureValueFor(assetsKey);
-    JSON.parse(nonsecureData).forEach((json, idx) => {
-        if (combinedData[idx]?.symbol !== json.symbol) {
-            return;
-        }
-        combinedData[idx] = {
-            ...combinedData[idx],
-            ...json,
-        };
-    });
+    let combinedData = JSON.parse(secureData);
+    const nonsecureData = getItem(legacyAssetsKey);
+    if (nonsecureData) {
+        JSON.parse(nonsecureData).forEach((json, idx) => {
+            if (combinedData[idx]?.symbol !== json.symbol) {
+                return;
+            }
+            combinedData[idx] = {
+                ...combinedData[idx],
+                ...json,
+            };
+        });
+    }
     return combinedData.map(jsonToAsset);
 }
 
 async function loadWebAssets() {
-    const stored = await AsyncStorage.getItem(webPortfolioKey);
+    const stored = getItem(webPortfolioKey);
     if (stored) {
         try {
             const assets = parseStoredAssets(JSON.parse(stored));
@@ -134,7 +115,7 @@ async function loadWebAssets() {
         }
     }
 
-    const legacy = await loadLegacyNativeAssets();
+    const legacy = await loadLegacyWebAssets();
     if (legacy.length > 0) {
         await saveWebAssets(legacy);
     }
@@ -142,60 +123,19 @@ async function loadWebAssets() {
 }
 
 async function saveWebAssets(assets) {
-    await AsyncStorage.setItem(
+    setItem(
         webPortfolioKey,
         JSON.stringify({
             version: 1,
             pricesFetchedAt: Date.now(),
             assets: assets.map(assetToJson),
-        })
+        }),
     );
-}
-
-async function saveNativeAssets(assets) {
-    const jsonNonsecureToSave = JSON.stringify(
-        assets.map((asset) => ({
-            name: asset.name,
-            symbol: asset.symbol,
-            imageUrl: asset.imageUrl,
-            coinId: asset.coinId,
-            s: asset.symbol,
-            n: asset.name,
-            i: asset.imageUrl,
-            c: asset.coinId,
-        }))
-    );
-    await saveInsecure(assetsKey, jsonNonsecureToSave);
-    const jsonToSave = JSON.stringify(
-        assets.map((asset) => ({
-            symbol: asset.symbol,
-            coinId: asset.coinId,
-            c: asset.coinId,
-            quantity: asset.quantity,
-            interestAccounts: asset.interestAccounts.map((ia) => ({
-                name: ia.name,
-                interestTiers: ia.interestTiers,
-                quantity: ia.quantity,
-            })),
-            lastBasePrice: asset.lastBasePrice || 0,
-            s: asset.symbol,
-            q: asset.quantity,
-            i: asset.interestAccounts.map((ia) => ({
-                n: ia.name,
-                t: ia.interestTiers,
-                q: ia.quantity,
-            })),
-        }))
-    );
-    await save(assetsKey, jsonToSave);
 }
 
 export async function getAssets() {
     try {
-        if (Platform.OS === 'web') {
-            return await loadWebAssets();
-        }
-        return await loadLegacyNativeAssets();
+        return await loadWebAssets();
     } catch {
         return [];
     }
@@ -203,31 +143,11 @@ export async function getAssets() {
 
 export async function saveAssets(assets) {
     const validAssets = assets.filter(Boolean);
-    if (Platform.OS === 'web') {
-        await saveWebAssets(validAssets);
-        return;
-    }
-    await saveNativeAssets(validAssets);
+    await saveWebAssets(validAssets);
 }
-
-const authTimeKey = 'auth-time-key';
-
-export async function getLastAuthTime() {
-    const seconds = await getValueFor(authTimeKey);
-    if (seconds == null) {
-        return null;
-    }
-    return JSON.parse(seconds);
-}
-
-export function setLastAuthTime(seconds) {
-    save(authTimeKey, JSON.stringify(seconds));
-}
-
-const dreamMultipleKey = 'dream-mode-multiple-key';
 
 export async function getDreamMultiple() {
-    const multiple = await AsyncStorage.getItem(dreamMultipleKey);
+    const multiple = getItem(dreamMultipleKey);
     if (multiple == null || multiple === '') {
         return 1;
     }
@@ -236,7 +156,7 @@ export async function getDreamMultiple() {
 }
 
 export async function setDreamMultiple(multiple) {
-    await saveInsecure(dreamMultipleKey, multiple.toString());
+    setItem(dreamMultipleKey, multiple.toString());
 }
 
 export async function exportPortfolioJson() {
@@ -248,7 +168,7 @@ export async function exportPortfolioJson() {
             assets: assets.map(assetToJson),
         },
         null,
-        2
+        2,
     );
 }
 
