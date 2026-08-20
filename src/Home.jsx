@@ -17,7 +17,7 @@ import {
     arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Menu, Plus, RefreshCw, GripVertical, Eye } from 'lucide-react';
+import { Menu, RefreshCw, GripVertical, Eye } from 'lucide-react';
 
 import { coinDataBackend } from './coinDataBackend.js';
 import { formatCurrency } from './util.js';
@@ -90,6 +90,8 @@ export default function Home() {
     const webPullDistanceRef = useRef(0);
     const scrollOffsetY = useRef(0);
     const refreshIdRef = useRef(0);
+    const pricesFetchIdRef = useRef(0);
+    const skipPathRefreshRef = useRef(true);
     const scrollRef = useRef(null);
     const suppressClickRef = useRef(false);
 
@@ -110,6 +112,11 @@ export default function Home() {
 
     async function refresh({ showSpinner = false, fetchPrices = true } = {}) {
         const refreshId = ++refreshIdRef.current;
+        // Soft reloads must not abort an in-flight price fetch (common race on
+        // mount / navigate-back). Only a newer fetchPrices call can cancel one.
+        const pricesFetchId = fetchPrices
+            ? ++pricesFetchIdRef.current
+            : pricesFetchIdRef.current;
         if (showSpinner) {
             setRefreshing(true);
         }
@@ -138,12 +145,12 @@ export default function Home() {
             }
 
             const prices = await coinDataBackend.getAssetsPrices(assets);
-            if (refreshId !== refreshIdRef.current) {
+            if (pricesFetchId !== pricesFetchIdRef.current) {
                 return;
             }
 
             const latestAssets = await getAssets();
-            if (refreshId !== refreshIdRef.current) {
+            if (pricesFetchId !== pricesFetchIdRef.current) {
                 return;
             }
             latestAssets.forEach((asset) => {
@@ -153,15 +160,22 @@ export default function Home() {
                 }
             });
             await saveAssets(latestAssets);
-            if (refreshId !== refreshIdRef.current) {
+            if (pricesFetchId !== pricesFetchIdRef.current) {
                 return;
             }
-            setHoldings(applyDreamPrices(latestAssets, theMultiple));
+            const currentMultiple = (await getDreamMultiple()) || 1;
+            if (pricesFetchId !== pricesFetchIdRef.current) {
+                return;
+            }
+            setMultiple(currentMultiple);
+            setHoldings(applyDreamPrices(latestAssets, currentMultiple));
         } catch {
             // Keep showing cached portfolio if price refresh fails.
         } finally {
-            if (refreshId === refreshIdRef.current) {
+            if (showSpinner && pricesFetchId === pricesFetchIdRef.current) {
                 setRefreshing(false);
+            }
+            if (refreshId === refreshIdRef.current) {
                 setLoading(false);
             }
         }
@@ -246,9 +260,16 @@ export default function Home() {
     }, []);
 
     useEffect(() => {
-        if (location.pathname === '/') {
-            refresh({ fetchPrices: false });
+        if (location.pathname !== '/') {
+            return;
         }
+        // Initial mount already loads with prices — skip the duplicate soft reload
+        // that used to cancel that fetch via refreshId.
+        if (skipPathRefreshRef.current) {
+            skipPathRefreshRef.current = false;
+            return;
+        }
+        refresh({ fetchPrices: false });
     }, [location.pathname]);
 
     async function handleDragEnd(event) {
@@ -340,6 +361,29 @@ export default function Home() {
                     )}
 
                     <div className="home-toolbar">
+                        <div className="home-toolbar-primary">
+                            <button
+                                type="button"
+                                className="icon-button icon-button--wide"
+                                onClick={pullRefresh}
+                                disabled={refreshing}
+                                aria-label="Refresh prices"
+                            >
+                                <RefreshCw
+                                    size={26}
+                                    color={refreshing ? '#555' : '#ddd'}
+                                    className={refreshing ? 'icon-spin' : undefined}
+                                />
+                            </button>
+                            <button
+                                type="button"
+                                className="icon-button icon-button--wide"
+                                onClick={lockPrivacy}
+                                aria-label="Hide portfolio"
+                            >
+                                <Eye size={26} color="#ddd" />
+                            </button>
+                        </div>
                         <button
                             type="button"
                             className="icon-button"
@@ -348,36 +392,6 @@ export default function Home() {
                         >
                             <Menu size={24} color="#ddd" />
                         </button>
-                        <div className="icon-button-group">
-                            <button
-                                type="button"
-                                className="icon-button"
-                                onClick={lockPrivacy}
-                                aria-label="Hide portfolio"
-                            >
-                                <Eye size={22} color="#ddd" />
-                            </button>
-                            <button
-                                type="button"
-                                className="icon-button"
-                                onClick={pullRefresh}
-                                disabled={refreshing}
-                                aria-label="Refresh prices"
-                            >
-                                <RefreshCw
-                                    size={22}
-                                    color={refreshing ? '#555' : '#ddd'}
-                                />
-                            </button>
-                            <button
-                                type="button"
-                                className="icon-button"
-                                onClick={() => navigate('/add')}
-                                aria-label="Add asset"
-                            >
-                                <Plus size={26} color="#ddd" />
-                            </button>
-                        </div>
                     </div>
 
                     {reorderMode && hasHoldings && (
