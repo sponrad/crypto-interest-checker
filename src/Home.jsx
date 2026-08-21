@@ -404,6 +404,14 @@ export default function Home() {
                     )}
 
                     <div className="home-toolbar">
+                        <button
+                            type="button"
+                            className="icon-button"
+                            onClick={() => navigate('/settings')}
+                            aria-label="Settings"
+                        >
+                            <Menu size={24} color="#ddd" />
+                        </button>
                         <div className="home-toolbar-primary">
                             <button
                                 type="button"
@@ -430,14 +438,6 @@ export default function Home() {
                                 <Eye size={26} color="#ddd" />
                             </button>
                         </div>
-                        <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() => navigate('/settings')}
-                            aria-label="Settings"
-                        >
-                            <Menu size={24} color="#ddd" />
-                        </button>
                     </div>
 
                     {reorderMode && hasHoldings && (
