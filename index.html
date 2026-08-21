@@ -184,19 +184,22 @@
           });
         }
 
-        document.addEventListener(
-          'visibilitychange',
-          function () {
-            if (document.hidden || document.visibilityState === 'hidden') {
-              lockNow();
-            }
-          },
-          true
-        );
-        window.addEventListener('pagehide', lockNow, true);
-        document.addEventListener('freeze', lockNow, true);
+        // Auto-lock on background/load is mobile-only (checking balances on the go).
+        if (isTouch) {
+          document.addEventListener(
+            'visibilitychange',
+            function () {
+              if (document.hidden || document.visibilityState === 'hidden') {
+                lockNow();
+              }
+            },
+            true
+          );
+          window.addEventListener('pagehide', lockNow, true);
+          document.addEventListener('freeze', lockNow, true);
 
-        lockNow();
+          lockNow();
+        }
       })();
     </script>
     <script type="module" src="/src/main.jsx"></script>
