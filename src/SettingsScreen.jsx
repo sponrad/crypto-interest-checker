@@ -8,7 +8,7 @@ import {
     importPortfolioJson,
 } from './localStorage.js';
 
-const PRESETS = ['0.5', '2', '4', '8', '10', '15', '20'];
+const PRESETS = ['0.5', '2', '4', '6', '8', '10', '15', '20'];
 
 function isStandaloneWebApp() {
     if (typeof window === 'undefined') {
@@ -96,20 +96,6 @@ export default function SettingsScreen() {
         <div className="scroll-area">
             <div className="screen-padding">
                 <div className="card">
-                    <h2 className="section-title">Portfolio</h2>
-                    <p className="section-description">
-                        Add a new holding to track on the home screen.
-                    </p>
-                    <button
-                        type="button"
-                        className="button-secondary mt-16"
-                        onClick={() => navigate('/add')}
-                    >
-                        <span className="button-text-secondary">Add asset</span>
-                    </button>
-                </div>
-
-                <div className="card">
                     <h2 className="section-title">
                         {isDreamMode ? 'Dream' : 'Nightmare'} mode
                     </h2>
@@ -173,6 +159,20 @@ export default function SettingsScreen() {
                         <span className="button-text-primary" style={{ textAlign: 'center' }}>
                             Apply & return home
                         </span>
+                    </button>
+                </div>
+
+                <div className="card">
+                    <h2 className="section-title">Portfolio</h2>
+                    <p className="section-description">
+                        Add a new holding to track on the home screen.
+                    </p>
+                    <button
+                        type="button"
+                        className="button-secondary mt-16"
+                        onClick={() => navigate('/add')}
+                    >
+                        <span className="button-text-secondary">Add asset</span>
                     </button>
                 </div>
 
