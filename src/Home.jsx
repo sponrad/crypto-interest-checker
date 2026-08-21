@@ -84,6 +84,7 @@ export default function Home() {
     const reorderMode = searchParams.get('reorder') === '1';
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [refreshSuccess, setRefreshSuccess] = useState(false);
     const [holdings, setHoldings] = useState([]);
     const [multiple, setMultiple] = useState(1);
     const [webPullDistance, setWebPullDistance] = useState(0);
@@ -94,6 +95,7 @@ export default function Home() {
     const skipPathRefreshRef = useRef(true);
     const scrollRef = useRef(null);
     const suppressClickRef = useRef(false);
+    const successTimeoutRef = useRef(null);
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -110,6 +112,23 @@ export default function Home() {
         });
     }
 
+    function clearRefreshSuccessFlash() {
+        if (successTimeoutRef.current) {
+            clearTimeout(successTimeoutRef.current);
+            successTimeoutRef.current = null;
+        }
+        setRefreshSuccess(false);
+    }
+
+    function flashRefreshSuccess() {
+        clearRefreshSuccessFlash();
+        setRefreshSuccess(true);
+        successTimeoutRef.current = setTimeout(() => {
+            setRefreshSuccess(false);
+            successTimeoutRef.current = null;
+        }, 1000);
+    }
+
     async function refresh({ showSpinner = false, fetchPrices = true } = {}) {
         const refreshId = ++refreshIdRef.current;
         // Soft reloads must not abort an in-flight price fetch (common race on
@@ -117,7 +136,10 @@ export default function Home() {
         const pricesFetchId = fetchPrices
             ? ++pricesFetchIdRef.current
             : pricesFetchIdRef.current;
+        const spinStartedAt = showSpinner ? Date.now() : 0;
+        let succeeded = false;
         if (showSpinner) {
+            clearRefreshSuccessFlash();
             setRefreshing(true);
         }
         try {
@@ -132,6 +154,7 @@ export default function Home() {
             }
             if (assets.length === 0) {
                 setHoldings([]);
+                succeeded = true;
                 return;
             }
 
@@ -141,6 +164,7 @@ export default function Home() {
             const needsPrices =
                 fetchPrices || assets.some((asset) => !asset.lastBasePrice);
             if (!needsPrices) {
+                succeeded = true;
                 return;
             }
 
@@ -169,11 +193,21 @@ export default function Home() {
             }
             setMultiple(currentMultiple);
             setHoldings(applyDreamPrices(latestAssets, currentMultiple));
+            succeeded = true;
         } catch {
             // Keep showing cached portfolio if price refresh fails.
         } finally {
             if (showSpinner && pricesFetchId === pricesFetchIdRef.current) {
-                setRefreshing(false);
+                const remaining = Math.max(0, 1000 - (Date.now() - spinStartedAt));
+                if (remaining > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, remaining));
+                }
+                if (pricesFetchId === pricesFetchIdRef.current) {
+                    setRefreshing(false);
+                    if (succeeded) {
+                        flashRefreshSuccess();
+                    }
+                }
             }
             if (refreshId === refreshIdRef.current) {
                 setLoading(false);
@@ -254,6 +288,14 @@ export default function Home() {
             scrollEl.removeEventListener('touchcancel', onTouchEnd);
         };
     }, [refreshing]);
+
+    useEffect(() => {
+        return () => {
+            if (successTimeoutRef.current) {
+                clearTimeout(successTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         refresh({ fetchPrices: true });
@@ -347,13 +389,14 @@ export default function Home() {
                 }}
             >
                 <div className="home-screen-padding">
-                    {(refreshing || webPullDistance > 12) && (
+                    {webPullDistance > 12 && (
                         <div
                             className="pull-indicator"
                             style={{
-                                opacity: refreshing
-                                    ? 1
-                                    : Math.min(webPullDistance / WEB_PULL_THRESHOLD, 1),
+                                opacity: Math.min(
+                                    webPullDistance / WEB_PULL_THRESHOLD,
+                                    1
+                                ),
                             }}
                         >
                             <Spinner small />
@@ -364,14 +407,17 @@ export default function Home() {
                         <div className="home-toolbar-primary">
                             <button
                                 type="button"
-                                className="icon-button icon-button--wide"
+                                className={`icon-button icon-button--wide${
+                                    refreshing ? ' icon-button--spinning' : ''
+                                }`}
                                 onClick={pullRefresh}
                                 disabled={refreshing}
                                 aria-label="Refresh prices"
+                                aria-busy={refreshing}
                             >
                                 <RefreshCw
                                     size={26}
-                                    color={refreshing ? '#555' : '#ddd'}
+                                    color={refreshSuccess ? '#22c55e' : '#ddd'}
                                     className={refreshing ? 'icon-spin' : undefined}
                                 />
                             </button>

@@ -365,6 +365,10 @@ textarea {
     cursor: not-allowed;
 }
 
+.icon-button:disabled.icon-button--spinning {
+    opacity: 1;
+}
+
 .icon-spin {
     animation: spin 0.8s linear infinite;
 }
